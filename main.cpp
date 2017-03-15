@@ -101,24 +101,6 @@ int main(int argc, char *argv[])
     pointNormals_src_init=*pointNormals_src;
     pointNormals_tgt_init=*pointNormals_tgt;
 
-    ///compute 2D histograms (phi/theta)--------------------------------------------------------------------------------------------------------------
-
-    //parameters for normal histograms...........................................................................................................
-
-    int N_hist=atoi(argv[5]);
-
-    std::vector<float> hist1_phi(N_hist, 0.0);
-    std::vector<float> hist2_phi(N_hist, 0.0);
-
-    get_phi_hist(pointNormals_src,hist1_phi);
-    get_phi_hist(pointNormals_tgt,hist2_phi);
-
-    save_vector(hist1_phi, "hist1_phi.csv");
-    save_vector(hist2_phi, "hist2_phi.csv");
-
-    ///TURN CLOUD TO ALIGN PROJECTIONS AND TURN THE TWO CLOUDS OF PHI--------------------------------------------------------------------------------------------------------------
-
-//    int N= 64;
 
 //    std::vector<std::vector<float>> hist1_angles((int)(N/2), std::vector<float>(N, 0.0));
 //    get_angles_hist(pointNormals_src,hist1_angles);
@@ -300,7 +282,7 @@ int main(int argc, char *argv[])
                 pcl::PointCloud<pcl::PointNormal> target;
 
                 pcl::copyPointCloud(pointNormals_src_init,source);
-     //           pcl::copyPointCloud(pointNormals_tgt_init,target);
+                pcl::copyPointCloud(pointNormals_tgt_init,target);
 
              ///rotate cloud in the accurate way with rotation information--------------------------------------------------------------------------------------------------------------------------------------
 
@@ -346,7 +328,11 @@ int main(int argc, char *argv[])
                 ///get translation with histograms correlation
 
                 Eigen::Matrix4f translation_transform = Eigen::Matrix4f::Zero();
-                get_translation(pointNormals_src, pointNormals_tgt, lim, axis, N_hist_axis, &translation_transform) ;
+                pcl::PointCloud<pcl::PointNormal>::Ptr source_ptr(new pcl::PointCloud<pcl::PointNormal>);
+                pcl::PointCloud<pcl::PointNormal>::Ptr target_ptr(new pcl::PointCloud<pcl::PointNormal>);
+                *source_ptr=source;
+                *target_ptr=target;
+                get_translation(source_ptr, target_ptr, lim, axis, N_hist_axis, &translation_transform) ;
 
                 Eigen::Matrix4f total_transform = Eigen::Matrix4f::Zero();
                 total_transform=rotation_transform+translation_transform;
