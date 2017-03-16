@@ -349,9 +349,10 @@ int main(int argc, char *argv[])
 //                pcl::copyPointCloud(*cloud_tgt,tgt);
 
                 get_LCP(*cloud_src, *cloud_tgt, &total_transform, &LCP);
+                int lim_for=clusters2.size();
 
-                LCP_vec[(s+1)*r*(w+1)]=LCP;
-                total_transform_vec[(s+1)*r*(w+1)]=total_transform;
+                LCP_vec[w*lim_for*(lim_for-1)+r*(lim_for-1)+s]=LCP;
+                total_transform_vec[w*lim_for*(lim_for-1)+r*(lim_for-1)+s]=total_transform;
 
                 }
             }
