@@ -18,8 +18,8 @@ void get_translation(pcl::PointCloud<pcl::PointNormal>::Ptr pointNormals_src, pc
     pcl::PointCloud<pcl_point>::Ptr cloud_tgt_filtered1(new pcl::PointCloud<pcl_point>);
     get_walls(pointNormals_src, lim, axis[0], cloud_src_filtered1);
     get_walls(pointNormals_tgt, lim, axis[0], cloud_tgt_filtered1);
-    pcl::io::savePCDFileASCII ("filtered_src.pcd", *cloud_src_filtered1);
-    pcl::io::savePCDFileASCII ("filtered_tgt.pcd", *cloud_tgt_filtered1);
+//    pcl::io::savePCDFileASCII ("filtered_src.pcd", *cloud_src_filtered1);
+//    pcl::io::savePCDFileASCII ("filtered_tgt.pcd", *cloud_tgt_filtered1);
     get_hist_axis(axis_lim[0], axis[0], cloud_src_filtered1, hist1_axis1);
     get_hist_axis(axis_lim[0], axis[0], cloud_tgt_filtered1, hist2_axis1);
 
@@ -95,11 +95,12 @@ void get_translation(pcl::PointCloud<pcl::PointNormal>::Ptr pointNormals_src, pc
         std::vector<float> cross11 = {axis[0][1]*axis[0][2]-axis[0][2]*axis[0][0], -axis[0][2]*axis[0][1]-axis[0][0]*axis[0][2], axis[0][0]*axis[0][0]+axis[0][1]*axis[0][1]};
         float dot_cross= cross12[0]*cross11[0]+cross12[1]*cross11[1]+cross12[2]*cross11[2];
         float alpha = atan(dot_cross/abs(dot));
+   //     translation_axis2=translation_axis2-1;
         float delta_m=(translation_axis2-N_hist_axis+1)*delta2;
-        float delta_axis2=(delta_m-delta_axis1*cos(alpha))/sin(alpha);
+        float delta_axis2=-delta_axis1/tan(alpha) +delta_m/sin(alpha);
         if(abs(alpha)>M_PI/2)
         {
-            delta_axis2=(-delta_m-delta_axis1*cos(alpha))/sin(alpha);
+            delta_axis2=-delta_axis1/tan(alpha) -delta_m/sin(alpha);
         }
 
     ///------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -107,7 +108,7 @@ void get_translation(pcl::PointCloud<pcl::PointNormal>::Ptr pointNormals_src, pc
 
     float x2=-delta_axis2*axis[0][1];
     float y2=delta_axis2*axis[0][0];
-    float z2=delta_axis2*axis[1][2];
+    float z2=delta_axis2*axis[0][2];
 
 //    std::cout<<"movement for axis 2: "<<std::endl;
 //    std::cout<<std::endl<<"  x translation: "<<x2<<"  y translation: "<<y2<<"  z translation: "<<z2<<std::endl<<std::endl;

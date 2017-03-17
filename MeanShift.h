@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <math.h>
 #include <vector>
+#include <omp.h>
 
 struct Cluster {
     std::vector<double> mode;

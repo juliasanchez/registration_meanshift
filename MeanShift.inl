@@ -32,6 +32,8 @@ vector<double> MeanShift::shift_point(const vector<double> &point, const vector<
         shifted_point[dim] = 0;
     }
     double total_weight = 0;
+//    #pragma omp parallel for num_threads(14) schedule(dynamic) firstprivate(points, kernel_bandwidth,shifted_point) shared (total_weight)
+
     for(int i=0; i<points.size(); i++){
         vector<double> temp_point = points[i];
         double distance = euclidean_distance(point, temp_point);
@@ -54,10 +56,9 @@ vector<vector<double> > MeanShift::meanshift(const vector<vector<double> > & poi
     double max_shift_distance;
     do {
         max_shift_distance = 0;
+        #pragma omp parallel for num_threads(14) schedule(dynamic) firstprivate(points, kernel_bandwidth, stop_moving) shared (shifted_points)
         for(int i=0; i<shifted_points.size(); i++)
         {
-//            if(i%10==0)
-//            std::cout<<(float)(i)/(float)(shifted_points.size())<<std::endl;
             if (!stop_moving[i]) {
                 vector<double>point_new = shift_point(shifted_points[i], points, kernel_bandwidth);
                 double shift_distance = euclidean_distance(point_new, shifted_points[i]);
