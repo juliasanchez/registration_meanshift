@@ -22,7 +22,7 @@ void get_LCP(pcl::PointCloud<pcl_point> cloud_src, pcl::PointCloud<pcl_point> cl
 
         if ( tree.nearestKSearch (cloud_tgt.points[k], 1, pointIdxNKNSearch, pointNKNSquaredDistance) > 0 )
         {
-            if(pointNKNSquaredDistance[0]<0.05)
+            if(pointNKNSquaredDistance[0]<0.1)
             {
                 *LCP=*LCP+1;
             }

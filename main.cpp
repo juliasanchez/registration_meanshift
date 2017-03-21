@@ -103,7 +103,7 @@ int main(int argc, char *argv[])
 
 
     clock_t t_meanshift=clock();
-    int samp=20;
+    int samp=10;
 
     MeanShift *msp = new MeanShift();
     double kernel_bandwidth = 0.25;
@@ -132,6 +132,10 @@ int main(int argc, char *argv[])
 
     for(int cluster = 0; cluster < clusters1.size(); cluster++)
     {
+        float modu = sqrt(clusters1[cluster].mode[0]*clusters1[cluster].mode[0]+clusters1[cluster].mode[1]*clusters1[cluster].mode[1]+clusters1[cluster].mode[2]*clusters1[cluster].mode[2]);
+        clusters1[cluster].mode[0] = clusters1[cluster].mode[0]/modu;
+        clusters1[cluster].mode[1] = clusters1[cluster].mode[1]/modu;
+        clusters1[cluster].mode[2] = clusters1[cluster].mode[2]/modu;
         std::stringstream sstm;
         sstm<<"cluster1_mode"<<cluster<<".csv";
         std::string cluster_name = sstm.str();
@@ -140,55 +144,29 @@ int main(int argc, char *argv[])
 
     for(int cluster = 0; cluster < clusters2.size(); cluster++)
     {
+        float modu = sqrt(clusters2[cluster].mode[0]*clusters2[cluster].mode[0]+clusters2[cluster].mode[1]*clusters2[cluster].mode[1]+clusters2[cluster].mode[2]*clusters2[cluster].mode[2]);
+        clusters2[cluster].mode[0] = clusters2[cluster].mode[0]/modu;
+        clusters2[cluster].mode[1] = clusters2[cluster].mode[1]/modu;
+        clusters2[cluster].mode[2] = clusters2[cluster].mode[2]/modu;
         std::stringstream sstm;
         sstm<<"cluster2_mode"<<cluster<<".csv";
         std::string cluster_name = sstm.str();
          save_cluster(clusters2[cluster].mode,cluster_name);
     }
 
-    vector<Cluster> clusters1_test(2);
-    clusters1_test[0]=clusters1[0];
-    clusters1_test[1]=clusters1[5];
-  //  clusters1_test[2]=clusters1[5];
+        vector<Cluster> clusters1_test(2);
+        clusters1_test[0]=clusters1[0];
+        clusters1_test[1]=clusters1[4];
+      //  clusters1_test[2]=clusters1[5];
 
-    vector<Cluster> clusters2_test(2);
-    clusters2_test[0]=clusters2[0];
-    clusters2_test[1]=clusters2[1];
-//    clusters2_test[2]=clusters2[3];
-    clusters1.resize(2);
-    clusters1=clusters1_test;
-    clusters2.resize(2);
-    clusters2=clusters2_test;
-
-////    ///JUST TO TEST PROGRAM WITHOUT COMPUTING MEANSHIFTS EACH TIME-------------------------------------
-
-//    std::vector<Cluster> clusters1(6);
-//    clusters1[0].mode= {0.483905, 0.869965, -0.000435804};
-//    clusters1[1].mode= {-0.0102198, -0.0199526, 0.987996};
-//    clusters1[2].mode= {0.867216, -0.489957, -0.00631862};
-//    clusters1[3].mode= {-0.47721, -0.866893, 0.00207398};
-//    clusters1[4].mode= {-0.00156818, 0.00238466, -0.996913};
-//    clusters1[5].mode= {-0.869894, 0.475461, -0.00944517};
-//      clusters1[0].original_points.resize(162);
-//      clusters1[1].original_points.resize(321);
-//      clusters1[2].original_points.resize(291);
-//      clusters1[3].original_points.resize(309);
-//      clusters1[4].original_points.resize(225);
-//      clusters1[5].original_points.resize(178);
-
-//    std::vector<Cluster> clusters2(6);
-//    clusters2[0].mode= {0.917746, 0.370634, -0.013321};
-//    clusters2[1].mode= {-0.366446, 0.922714, -0.0148863};
-//    clusters2[2].mode= {8.38448e-5, 0.00235991, 0.994073};
-//    clusters2[3].mode= {-0.00664235, 0.00236323, -0.996601};
-//    clusters2[4].mode= {0.633157, -0.751046, -0.00880965};
-//    clusters2[5].mode= {-0.0117161, -0.97784, -0.00395968};
-//      clusters2[0].original_points.resize(210);
-//      clusters2[1].original_points.resize(384);
-//      clusters2[2].original_points.resize(576);
-//      clusters2[3].original_points.resize(441);
-//      clusters2[4].original_points.resize(67);
-//      clusters2[5].original_points.resize(89);
+        vector<Cluster> clusters2_test(2);
+        clusters2_test[0]=clusters2[0];
+        clusters2_test[1]=clusters2[1];
+    //    clusters2_test[2]=clusters2[3];
+        clusters1.resize(2);
+        clusters1=clusters1_test;
+        clusters2.resize(2);
+        clusters2=clusters2_test;
 
       int n_combi1 = fact( clusters1.size() ) / ( fact(2)*fact(clusters1.size()-2) );
       int n_combi2 = fact( clusters2.size() ) / fact(clusters2.size()-2);
@@ -257,7 +235,7 @@ int main(int argc, char *argv[])
     std::vector<Eigen::Matrix4f> total_transform_vec(pairs1.size()*clusters2.size()*clusters2.size());
     Eigen::Matrix4f good_transform = Eigen::Matrix4f::Identity();
 
-//    #pragma omp parallel for schedule(dynamic) firstprivate(pairs1, N_hist_axis, lim, clusters1, clusters2, pointNormals_src_init, pointNormals_src, pointNormals_tgt_init, pointNormals_tgt, axis, cloud_src, cloud_tgt ) shared( LCP_vec, total_transform_vec )
+    #pragma omp parallel for schedule(dynamic) firstprivate(pairs1, N_hist_axis, lim, clusters1, clusters2, pointNormals_src_init, pointNormals_src, pointNormals_tgt_init, pointNormals_tgt, axis, cloud_src, cloud_tgt ) shared( LCP_vec, total_transform_vec )
 
     for (int w=0; w<pairs1.size(); w++)
     {
@@ -342,7 +320,7 @@ int main(int argc, char *argv[])
 
 //                std::cout<<"----------------------------------------------------------------------------------------------------------------------------------------------------"<<std::endl<<std::endl;
 
-                ///gcompute LCP for this transformation
+                ///compute LCP for this transformation
 
                 get_LCP(*cloud_src, *cloud_tgt, &total_transform, &LCP);
                 int lim_for=clusters2.size();
