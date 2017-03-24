@@ -10,8 +10,9 @@
 #include "transform.h"
 #include "envelope.h"
 #include "get_lim_axis.h"
+#include "save_axis.h"
 
-void get_translation(pcl::PointCloud<pcl::Normal>::Ptr pointNormals_src, pcl::PointCloud<pcl::Normal>::Ptr pointNormals_tgt, float lim, std::vector<std::vector<float>> axis, int N_hist_axis, Eigen::Matrix4f* translation_transform);
+void get_translation(pcl::PointCloud<pcl::PointNormal>::Ptr pointNormals_src, pcl::PointCloud<pcl::PointNormal>::Ptr pointNormals_tgt, float lim, std::vector<std::vector<float>> axis, float bin_width, Eigen::Matrix4f* translation_transform);
 
 #include "get_translation.inl"
 

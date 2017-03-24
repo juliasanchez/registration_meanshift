@@ -4,7 +4,7 @@ void get_hist_axis(std::vector<float> axis_lim, std::vector<float> axis, pcl::Po
 
     float v_axis;
 
-    float delta=(float)(  (axis_lim[1]-axis_lim[0])/(float)(N_hist_axis)  );
+    float delta=(float)(axis_lim[1]-axis_lim[0]) / (float)(N_hist_axis);
 
 
     for (size_t i = 0; i < cloud->points.size (); ++i)
