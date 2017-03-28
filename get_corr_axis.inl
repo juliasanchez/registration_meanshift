@@ -37,7 +37,6 @@ void get_corr_axis(std::vector<float>& hist1_axisi, std::vector<float>& hist2_ax
     std::vector<float> env;
     int neighbourhood=10;
     envelope(corr_axis, neighbourhood, &env);
-    save_vector(corr_axis, "corr_axis_before.csv");
 
     for (int k=10; k<2*N_hist_axis-1-neighbourhood; k++)
     {
