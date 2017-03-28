@@ -177,17 +177,32 @@ int main(int argc, char *argv[])
          save_cluster(clusters2[clus].mode,cluster_name);
     }
 
+//    clusters1_test.resize(2);
+//    clusters1_test[0]=clusters1[2];
+//    clusters1_test[1]=clusters1[3];
+
+//    clusters2_test.resize(2);
+//    clusters2_test[0]=clusters2[5];
+//    clusters2_test[1]=clusters2[3];
+
+//    clusters1.resize(2);
+//    clusters1=clusters1_test;
+//    clusters2.resize(2);
+//    clusters2=clusters2_test;
+
   /// get main walls and their normal to perform translation search. these normals become axis
 
-      //il faudrait prendre seulement le nuage qui a le moins de cluster
+      //choisir le nuage qui a le moins de clusters comme target
       std::vector<std::vector<float>> axis(3, std::vector<float>(3, 0.0));
       std::vector<Cluster> clusters;
 
       bool modif_axis;
       if(clusters1.size()>=clusters2.size())
       {
-          clusters=clusters2;
-          modif_axis=false;
+//          clusters=clusters2;
+//          modif_axis=false;
+          clusters=clusters1;
+          modif_axis=true;
       }
       else
         {
@@ -196,7 +211,7 @@ int main(int argc, char *argv[])
         }
 
       bool error;
-      get_axis(clusters2, axis, &error);
+      get_axis(clusters, axis, &error);
 
       if(error)
       {
@@ -204,9 +219,9 @@ int main(int argc, char *argv[])
           return 0;
       }
 
-      save_axis(axis[0], "axis_x.csv");
-      save_axis(axis[1], "axis_y.csv");
-      save_axis(axis[2], "axis_z.csv");
+//      save_axis(axis[0], "axis_x.csv");
+//      save_axis(axis[1], "axis_y.csv");
+//      save_axis(axis[2], "axis_z.csv");
 
     ///--------------------------------Loop to test all pairs combination between source and target----------------------------------------------------------------------
 
@@ -225,7 +240,7 @@ int main(int argc, char *argv[])
     std::vector<Eigen::Matrix4f> total_transform_vec(pairs1.size()*clusters2.size()*clusters2.size());
     Eigen::Matrix4f good_transform = Eigen::Matrix4f::Identity();
 
-    #pragma omp parallel for schedule(dynamic) firstprivate(pairs1, bin_width, lim, clusters1, clusters2, pointNormals_src_init, pointNormals_src, pointNormals_tgt_init, pointNormals_tgt, axis, cloud_src, cloud_tgt ) shared( LCP_vec, total_transform_vec )
+   #pragma omp parallel for schedule(dynamic) firstprivate(pairs1, bin_width, lim, clusters1, clusters2, pointNormals_src_init, pointNormals_src, pointNormals_tgt_init, pointNormals_tgt, axis, cloud_src, cloud_tgt ) shared( LCP_vec, total_transform_vec )
 
     for (int w=0; w<pairs1.size(); w++)
     {
@@ -259,16 +274,25 @@ int main(int argc, char *argv[])
                 get_rotation(walls1, walls2, &rotation_transform);
 
                 pcl::transformPointCloudWithNormals (source, source, rotation_transform);
+                //std::cout<<rotation_transform<<std::endl;
+                std::vector<std::vector<float>> temp(3, std::vector<float>(3, 0.0));
+                temp=axis;
+
+                ///TURN AXIS IF THEY COME FROM SOURCE
                 if(modif_axis)
                 {
                     for (int h=0; h<3; h++)
                     {
                         for (int g=0; g<3; g++)
                         {
-                            axis[h][g]=axis[h][0]*rotation_transform(g,0)+axis[h][1]*rotation_transform(g,1)+axis[h][2]*rotation_transform(g,2);
+                            temp[h][g]=axis[h][0]*rotation_transform(g,0)+axis[h][1]*rotation_transform(g,1)+axis[h][2]*rotation_transform(g,2);
                         }
                     }
                 }
+
+//                save_axis(temp[0], "axis_x.csv");
+//                save_axis(temp[1], "axis_y.csv");
+//                save_axis(temp[2], "axis_z.csv");
 
                 ///get translation with histograms correlation
 
@@ -277,7 +301,7 @@ int main(int argc, char *argv[])
                 pcl::PointCloud<pcl::PointNormal>::Ptr target_ptr(new pcl::PointCloud<pcl::PointNormal>);
                 *source_ptr=source;
                 *target_ptr=target;
-                get_translation(source_ptr, target_ptr, lim, axis, bin_width, &translation_transform) ;
+                get_translation(source_ptr, target_ptr, lim, temp, bin_width, &translation_transform) ;
 
                 Eigen::Matrix4f total_transform = Eigen::Matrix4f::Zero();
                 total_transform=rotation_transform+translation_transform;
