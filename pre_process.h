@@ -9,7 +9,7 @@
 
 typedef pcl::PointXYZ pcl_point;
 
-void pre_process(std::string pcd_file1,float sample,float normal_radius,int display, int level, pcl::PointCloud<pcl_point>::Ptr cloud_in, Eigen::Matrix4f matrix_transform, pcl::PointCloud<pcl::Normal>::Ptr);
+void pre_process(std::string pcd_file1,float sample,int display, pcl::PointCloud<pcl_point>::Ptr cloud_in, Eigen::Matrix4f matrix_transform, pcl::PointCloud<pcl::Normal>::Ptr);
 
 #include "pre_process.inl"
 

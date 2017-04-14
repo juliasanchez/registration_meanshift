@@ -11,6 +11,8 @@ void get_translation(pcl::PointCloud<pcl::PointNormal>::Ptr pointNormals_src, pc
     get_walls(pointNormals_tgt, lim, axis[0], cloud_tgt_filtered1);
 //    pcl::io::savePCDFileASCII ("filtered_src_x.pcd", *cloud_src_filtered1);
 //    pcl::io::savePCDFileASCII ("filtered_tgt_x.pcd", *cloud_tgt_filtered1);
+    if(cloud_src_filtered1->points.size()==0 || cloud_tgt_filtered1->points.size()==0)
+    return;
     get_lim_axis(cloud_src_filtered1, cloud_tgt_filtered1, axis[0], axis_lim[0]);
     N_hist[0]=(int)(round((axis_lim[0][1]-axis_lim[0][0])/bin_width));
 
@@ -21,6 +23,8 @@ void get_translation(pcl::PointCloud<pcl::PointNormal>::Ptr pointNormals_src, pc
     get_walls(pointNormals_tgt, lim, axis[1], cloud_tgt_filtered2);
 //    pcl::io::savePCDFileASCII ("filtered_src_y.pcd", *cloud_src_filtered2);
 //    pcl::io::savePCDFileASCII ("filtered_tgt_y.pcd", *cloud_tgt_filtered2);
+    if(cloud_src_filtered2->points.size()==0 || cloud_tgt_filtered2->points.size()==0)
+    return;
     get_lim_axis(cloud_src_filtered2, cloud_tgt_filtered2, axis[1], axis_lim[1]);
     N_hist[1]=(int)(round((axis_lim[1][1]-axis_lim[1][0])/bin_width));
 
@@ -32,6 +36,8 @@ void get_translation(pcl::PointCloud<pcl::PointNormal>::Ptr pointNormals_src, pc
     get_walls(pointNormals_tgt, lim, axis[2], cloud_tgt_filtered3);
 //    pcl::io::savePCDFileASCII ("filtered_src_z.pcd", *cloud_src_filtered3);
 //    pcl::io::savePCDFileASCII ("filtered_tgt_z.pcd", *cloud_tgt_filtered3);
+    if(cloud_src_filtered3->points.size()==0 || cloud_tgt_filtered3->points.size()==0)
+    return;
     get_lim_axis(cloud_src_filtered3, cloud_tgt_filtered3, axis[2], axis_lim[2]);
     N_hist[2]=(int)(round((axis_lim[2][1]-axis_lim[2][0])/bin_width));
 
@@ -59,6 +65,14 @@ void get_translation(pcl::PointCloud<pcl::PointNormal>::Ptr pointNormals_src, pc
     norm_hist(hist1_axis3);
     norm_hist(hist2_axis3);
 
+    ///save histograms--------------------------------------------------------------------------------------------------------------
+//    save_vector (hist1_axis1, "hist1_axis1.csv");
+//    save_vector (hist1_axis2, "hist1_axis2.csv");
+//    save_vector (hist2_axis1,"hist2_axis1.csv");
+//    save_vector (hist2_axis2,"hist2_axis2.csv");
+//    save_vector (hist1_axis3,"hist1_axis3.csv");
+//    save_vector (hist2_axis3,"hist2_axis3.csv");
+
     ///compute corr function for axis1--------------------------------------------------------------------------------------------------------------
 
     std::vector<float> corr_axis1(2*N_hist[0]-1, 0.0);
@@ -70,6 +84,7 @@ void get_translation(pcl::PointCloud<pcl::PointNormal>::Ptr pointNormals_src, pc
     int translation_axis3;
 
     get_corr_axis(hist1_axis1, hist2_axis1, corr_axis1, &translation_axis1);
+//    save_vector(corr_axis1, "corr_axis1.csv");
 
     float delta1=(float)(axis_lim[0][1]-axis_lim[0][0]) / (float)(N_hist[0]);
     float delta_axis1 = (translation_axis1-N_hist[0]+1) * delta1;
@@ -78,9 +93,11 @@ void get_translation(pcl::PointCloud<pcl::PointNormal>::Ptr pointNormals_src, pc
     float y1 = delta_axis1*axis[0][1];
     float z1 = delta_axis1*axis[0][2];
 
+
     ///compute corr function for axis2--------------------------------------------------------------------------------------------------------------
 
     get_corr_axis(hist1_axis2, hist2_axis2, corr_axis2, &translation_axis2);
+    save_vector(corr_axis2, "corr_axis2.csv");
 
     float delta2 = (float)(axis_lim[1][1] - axis_lim[1][0]) / (float)(N_hist[1]);
 
@@ -88,12 +105,12 @@ void get_translation(pcl::PointCloud<pcl::PointNormal>::Ptr pointNormals_src, pc
     axis_y[0]=axis[2][1]*axis[0][2]-axis[2][2]*axis[0][1];
     axis_y[1]=axis[2][2]*axis[0][0]-axis[2][0]*axis[0][2];
     axis_y[2]=axis[2][0]*axis[0][1]-axis[2][1]*axis[0][0];
+    save_axis(axis_y, "axis_y1.csv");
 
     float dot = axis[0][0]*axis[1][0]+axis[0][1]*axis[1][1]+axis[0][2]*axis[1][2];
 
     double alpha = acos(dot);
     double delta_m = (translation_axis2 - N_hist[1] + 1) * delta2;
-
     double delta_axis2 = (-delta_axis1*cos(alpha) + delta_m)/sin(alpha); // if normals oriented inside
 
     ///------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -105,6 +122,7 @@ void get_translation(pcl::PointCloud<pcl::PointNormal>::Ptr pointNormals_src, pc
     ///compute corr function for axis3--------------------------------------------------------------------------------------------------------------
 
     get_corr_axis(hist1_axis3, hist2_axis3, corr_axis3, &translation_axis3);
+    save_vector(corr_axis3, "corr_axis3.csv");
 
     float delta3=(float)(  (axis_lim[2][1]-axis_lim[2][0])/(float)(N_hist[2])  );
 

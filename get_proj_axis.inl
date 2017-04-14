@@ -37,7 +37,7 @@ void get_proj_axis(std::vector<float> axis_lim, int axis, pcl::PointCloud<pcl_po
             break;
 
         default:
-            cout<<"Error, bad axis\n";
+            std::cout<<"Error, bad axis\n";
             break;
       }
 }

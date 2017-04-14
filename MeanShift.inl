@@ -2,7 +2,7 @@
 
 using namespace std;
 
-#define EPSILON 0.00000001
+#define EPSILON 0.0000001
 #define CLUSTER_EPSILON 0.5
 
 double euclidean_distance(const vector<double> &point_a, const vector<double> &point_b){
@@ -18,9 +18,21 @@ double gaussian_kernel(double distance, double kernel_bandwidth){
     return temp;
 }
 
+
+double epanechnikov(double distance, double kernel_bandwidth)
+{
+        double z = distance/kernel_bandwidth;
+        if(fabs(z) > 1.0){
+                return (0.0);
+        }
+        return 0.75*(1.0-(z*z));
+
+}
+
 void MeanShift::set_kernel( double (*_kernel_func)(double,double) ) {
     if(!_kernel_func){
-        kernel_func = gaussian_kernel;
+//        kernel_func = gaussian_kernel;
+        kernel_func = epanechnikov;
     } else {
         kernel_func = _kernel_func;    
     }
@@ -33,7 +45,7 @@ vector<double> MeanShift::shift_point(const vector<double> &point, const vector<
     }
     double total_weight = 0;
 //    #pragma omp parallel for num_threads(14) schedule(dynamic) firstprivate(points, kernel_bandwidth,shifted_point) shared (total_weight)
-
+    set_kernel(epanechnikov);
     for(int i=0; i<points.size(); i++){
         vector<double> temp_point = points[i];
         double distance = euclidean_distance(point, temp_point);

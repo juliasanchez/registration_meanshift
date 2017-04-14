@@ -29,7 +29,7 @@ void get_lim_axis(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_src, pcl::PointCloud
         }
     }
 
-    axis_lim[1]=axis_lim[1]+0.001*(axis_lim[1]-axis_lim[0]);
-    axis_lim[0]=axis_lim[0]-0.001*(axis_lim[1]-axis_lim[0]);
+    axis_lim[1]=axis_lim[1]+0.003*(axis_lim[1]-axis_lim[0]);
+    axis_lim[0]=axis_lim[0]-0.003*(axis_lim[1]-axis_lim[0]);
 
 }

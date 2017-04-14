@@ -1,8 +1,5 @@
-void get_LCP(pcl::PointCloud<pcl_point> cloud_src, pcl::PointCloud<pcl_point> cloud_tgt, Eigen::Matrix4f* transform, int* LCP)
+void get_LCP(pcl::PointCloud<pcl_point> cloud_src, pcl::PointCloud<pcl_point> cloud_tgt, float thresh, Eigen::Matrix4f* transform, int* LCP)
 {
-    float temp=0;
-    int idx;
-
     //transform
     pcl::transformPointCloud (cloud_src, cloud_src, *transform);
     pcl::KdTreeFLANN<pcl::PointXYZ> tree;
@@ -22,7 +19,7 @@ void get_LCP(pcl::PointCloud<pcl_point> cloud_src, pcl::PointCloud<pcl_point> cl
 
         if ( tree.nearestKSearch (cloud_tgt.points[k], 1, pointIdxNKNSearch, pointNKNSquaredDistance) > 0 )
         {
-            if(pointNKNSquaredDistance[0]<0.10)
+            if(pointNKNSquaredDistance[0]<thresh)
             {
                 *LCP=*LCP+1;
             }

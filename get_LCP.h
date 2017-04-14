@@ -13,7 +13,7 @@
 using namespace std;
 typedef pcl::PointXYZ pcl_point;
 
-void get_LCP(pcl::PointCloud<pcl_point> cloud_src, pcl::PointCloud<pcl_point> cloud_tgt, Eigen::Matrix4f* transform, int* LCP);
+void get_LCP(pcl::PointCloud<pcl_point> cloud_src, pcl::PointCloud<pcl_point> cloud_tgt, float thresh, Eigen::Matrix4f* transform, int* LCP);
 
 #include "get_LCP.inl"
 

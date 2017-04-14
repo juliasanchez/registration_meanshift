@@ -1,12 +1,18 @@
-void pre_process(std::string pcd_file,float sample,float normal_radius, int display, int level, pcl::PointCloud<pcl_point>::Ptr cloud_in, Eigen::Matrix4f matrix_transform, pcl::PointCloud<pcl::Normal>::Ptr normals)
+void pre_process(std::string pcd_file,float sample, int display, pcl::PointCloud<pcl_point>::Ptr cloud_in, Eigen::Matrix4f matrix_transform, pcl::PointCloud<pcl::Normal>::Ptr normals)
 {
     cloud<pcl_point> cloud_src;
     cloud_src.setInputCloud(cloud_in);
     cloud_src.load(pcd_file);
+    float N_points=cloud_in->points.size();
+    sample=std::min(sample,N_points);
     cloud_src.sample(sample);
     cloud_src.clean();
     cloud_src.transform(matrix_transform);
 
+    cloud_src.setTree();
+    double reso=cloud_src.computeCloudResolution ();
+    float normal_radius=5*reso;
+    std::cout<<"normal_radius : "<<normal_radius<<std::endl<<std::endl;
     cloud_src.getNormals(normal_radius, normals);
 
     if (display)
