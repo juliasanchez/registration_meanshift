@@ -5,7 +5,6 @@
 #include <fstream>
 #include <string>
 #include <vector>
-#include "MeanShift.h"
 
 float size_cluster(Cluster clus);
 

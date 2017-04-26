@@ -1,0 +1,11 @@
+#!/bin/bash
+# since Bash v4
+
+echo ${str}
+for ((i=2; i<20; i++));
+do
+let j=i+1
+     /home/julia/Desktop/my_programs/hist_registration/build-hist_registration/hist_registration /home/julia/Documents/data_base/hokuyo/pcd/Hokuyo_$i.pcd /home/julia/Documents/data_base/hokuyo/pcd/Hokuyo_$j.pcd 0.05 0.2 0.02 0 0.02 0.98 5 0.1 0.01 0.05 30
+done
+
+

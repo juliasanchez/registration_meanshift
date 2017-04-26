@@ -12,6 +12,7 @@
 #include <omp.h>
 #include <iterator>
 #include <chrono>
+#include <pcl/filters/extract_indices.h>
 
 #include "cloud.h"
 #include "display_normals.h"
@@ -29,6 +30,7 @@
 #include "pre_transform.h"
 #include "icp.h"
 #include "size_cluster.h"
+
 
 
 
@@ -73,7 +75,7 @@ int main(int argc, char *argv[])
 
     std::vector<int> indices;
     pcl::removeNaNNormalsFromPointCloud(*pointNormals_src, *pointNormals_src, indices);
-    pcl::removeNaNNormalsFromPointCloud(*pointNormals_tgt, *pointNormals_tgt, indices);
+    pcl::removeNaNNormalsFromPointCloud(*pointNormals_tgt, *pointNormals_tgt, indices);  
 
     std::cout<< "source: points number after preprocessing : "<<pointNormals_src->size()<<std::endl;
     std::cout<< "target: points number after preprocessing : "<<pointNormals_tgt->size()<<std::endl<<std::endl;
@@ -90,12 +92,37 @@ int main(int argc, char *argv[])
     //2_ filter normals to enhance clusters   HEAVY STEP
 
     auto t_filter_1 = std::chrono::high_resolution_clock::now();
-    float radius =0.04;
+    float radius =0.02;
     float perc = atof(argv[5]);
     pcl::io::savePCDFileASCII ("normals1_before.pcd", *normals1);
     pcl::io::savePCDFileASCII ("normals2_before.pcd", *normals2);
+
     filter_normals(normals1, radius, perc);
     filter_normals(normals2, radius, perc);
+
+
+
+//    pcl::RadiusOutlierRemoval<pcl_point> rorfilter(true);
+//    rorfilter.setInputCloud (normals2);
+//    rorfilter.setRadiusSearch (0.02);
+//    rorfilter.setMinNeighborsInRadius (floor(normals2->points.size()*perc )  );
+//    rorfilter.filter (*normals2);
+//    pcl::IndicesConstPtr removed_ind;
+//    removed_ind = rorfilter.getRemovedIndices ();
+
+
+
+//    pcl::PointCloud<pcl::PointNormal>::Ptr pointNormals_tgt_filtered(new pcl::PointCloud<pcl::PointNormal>);
+//    pcl::ExtractIndices<pcl::PointNormal> eifilter; // Initializing with true will allow us to extract the removed indices
+//    eifilter.setNegative (true);
+//    eifilter.setInputCloud (pointNormals_tgt);
+//    eifilter.setIndices (removed_ind);
+//    eifilter.filter (*pointNormals_tgt_filtered);
+//    pcl::io::savePCDFileASCII ("points_in_clusters.pcd", *pointNormals_tgt_filtered);
+
+
+
+
 
     pcl::io::savePCDFileASCII ("normals1_after.pcd", *normals1);
     pcl::io::savePCDFileASCII ("normals2_after.pcd", *normals2);
@@ -149,7 +176,7 @@ int main(int argc, char *argv[])
     for (int i=0; i<clusters1.size(); i++)
     {
         float size=size_cluster(clusters1[i]);
-        if(size>0.25)
+        if(size<0.97)
         {
             clusters1[i].original_points.resize(0);
         }
@@ -158,7 +185,7 @@ int main(int argc, char *argv[])
     for (int i=0; i<clusters2.size(); i++)
     {
         float size=size_cluster(clusters2[i]);
-        if(size>0.25)
+        if(size<0.97)
         {
             clusters2[i].original_points.resize(0);
         }

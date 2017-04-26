@@ -43,8 +43,8 @@ void get_axis(std::vector<Cluster> clusters, std::vector< std::vector <float> >&
 
     for (int i=0; i<3; i++)
     {
-        axis[0][i]=norm1[i]/modu;
-        axis[1][i]=norm2[i]/modu;
+        axis[0][i]=norm1[i];
+        axis[1][i]=norm2[i];
         axis[2][i]=norm3[i]/modu;
     }
 }
