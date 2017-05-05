@@ -2,9 +2,9 @@
 #define GET_ROTATION
 
 #include <iostream>
-#include "/usr/local/include/eigen3/Eigen/Core"
-#include "/usr/local/include/eigen3/Eigen/Dense"
-#include "/usr/local/include/eigen3/Eigen/Eigen"
+#include "/usr/local/include/Eigen/Core"
+#include "/usr/local/include/Eigen/Dense"
+#include "/usr/local/include/Eigen/Eigen"
 #include <pcl/io/pcd_io.h>
 #include <pcl/common/transforms.h>
 
