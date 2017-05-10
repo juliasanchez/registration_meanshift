@@ -1,4 +1,4 @@
-void get_LCP(pcl::PointCloud<pcl_point> cloud_src, pcl::PointCloud<pcl_point> cloud_tgt, float thresh, Eigen::Matrix4f* transform, int* LCP)
+void get_mean_distance(pcl::PointCloud<pcl_point> cloud_src, pcl::PointCloud<pcl_point> cloud_tgt, Eigen::Matrix4f* transform, float* mean_distance)
 {
     //transform
     pcl::transformPointCloud (cloud_src, cloud_src, *transform);
@@ -7,22 +7,27 @@ void get_LCP(pcl::PointCloud<pcl_point> cloud_src, pcl::PointCloud<pcl_point> cl
     *cloud_src_ptr=cloud_src;
     tree.setInputCloud(cloud_src_ptr);
 
-    //compute LCP
-
-    *LCP=0;
+    //compute mean_distance
 
     std::vector<int> pointIdxNKNSearch(1);
     std::vector<float> pointNKNSquaredDistance(1);
 
+    int n=0;
+    *mean_distance=0;
+
     for (int k=0; k<cloud_tgt.size(); k++)
     {
+
         if ( tree.nearestKSearch (cloud_tgt.points[k], 1, pointIdxNKNSearch, pointNKNSquaredDistance) > 0 )
         {
-            if(pointNKNSquaredDistance[0]<thresh)
+            if(sqrt(pointNKNSquaredDistance[0])<0.1)
             {
-                *LCP=*LCP+1;
+                *mean_distance=*mean_distance+sqrt(pointNKNSquaredDistance[0]);
+                n++;
             }
         }
     }
 
+
+    *mean_distance=*mean_distance/n;
 }

@@ -11,7 +11,7 @@ void pre_process(std::string pcd_file,float sample, int display, pcl::PointCloud
 
     cloud_src.setTree();
     double reso=cloud_src.computeCloudResolution ();
-    float normal_radius=5*reso;
+    float normal_radius=4*reso;
     std::cout<<"normal_radius : "<<normal_radius<<std::endl<<std::endl;
     cloud_src.getNormals(normal_radius, normals);
 
