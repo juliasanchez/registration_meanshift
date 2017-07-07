@@ -1,5 +1,5 @@
-#ifndef GET_MEAN_DISTANCE
-#define GET_MEAN_DISTANCE
+#ifndef DENSITY_FILTER
+#define DENSITY_FILTER
 
 #include <iostream>
 #include <fstream>
@@ -13,8 +13,8 @@
 using namespace std;
 typedef pcl::PointXYZ pcl_point;
 
-void get_mean_distance(pcl::PointCloud<pcl_point>::Ptr cloud_src, pcl::KdTreeFLANN<pcl_point>::Ptr tree, Eigen::Matrix4f* transform, float* mean_distance);
+void density_filter(pcl::PointCloud<pcl_point>::Ptr cloud_in, float thresh, int points);
 
-#include "get_mean_distance.inl"
+#include "density_filter.inl"
 
-#endif // GET_MEAN_DISTANCE
+#endif // DENSITY_FILTER

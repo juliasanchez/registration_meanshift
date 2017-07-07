@@ -1,5 +1,34 @@
 void get_translation(pcl::PointCloud<pcl::PointNormal>::Ptr pointNormals_src, pcl::PointCloud<pcl::PointNormal>::Ptr pointNormals_tgt, float lim, std::vector<std::vector<float>> axis, float bin_width, Eigen::Matrix4f* translation_transform)
 {
+
+    /// compute local frame axis--------------------------------------------------------------------------------------------------------------
+
+    std::vector<std::vector<float>> local_frame (3, std::vector<float>(3));
+    local_frame[0][0]=axis[0][0];
+    local_frame[0][1]=axis[0][1];
+    local_frame[0][2]=axis[0][2];
+
+    local_frame[2][0]=axis[0][1]*axis[1][2]-axis[0][2]*axis[1][1];
+    local_frame[2][1]=axis[0][2]*axis[1][0]-axis[0][0]*axis[1][2];
+    local_frame[2][2]=axis[0][0]*axis[1][1]-axis[0][1]*axis[1][0];
+
+    local_frame[1][0]=local_frame[2][1]*axis[0][2]-local_frame[2][2]*axis[0][1];
+    local_frame[1][1]=local_frame[2][2]*axis[0][0]-local_frame[2][0]*axis[0][2];
+    local_frame[1][2]=local_frame[2][0]*axis[0][1]-local_frame[2][1]*axis[0][0];
+
+    for(int i=0; i<local_frame.size(); i++)
+    {
+        float modu=sqrt(local_frame[i][0]*local_frame[i][0]+local_frame[i][1]*local_frame[i][1]+local_frame[i][2]*local_frame[i][2]);
+        for(int j=0; j<local_frame[i].size(); j++)
+        {
+            local_frame[i][j]= local_frame[i][j]/modu;
+        }
+    }
+
+    save_axis(local_frame[0], "axis_local_x.csv");
+    save_axis(local_frame[1], "axis_local_y.csv");
+    save_axis(local_frame[2], "axis_local_z.csv");
+
     ///get histograms--------------------------------------------------------------------------------------------------------------
     std::vector<std::vector<float>> axis_lim(3,std::vector<float>(2,0.0));
     std::vector<int> N_hist(3);
@@ -73,15 +102,15 @@ void get_translation(pcl::PointCloud<pcl::PointNormal>::Ptr pointNormals_src, pc
 //    save_vector (hist1_axis3,"hist1_axis3.csv");
 //    save_vector (hist2_axis3,"hist2_axis3.csv");
 
-    ///compute corr function for axis1--------------------------------------------------------------------------------------------------------------
+    int translation_axis1;
+    int translation_axis2;
+    int translation_axis3;
 
     std::vector<float> corr_axis1(2*N_hist[0]-1, 0.0);
     std::vector<float> corr_axis2(2*N_hist[1]-1, 0.0);
     std::vector<float> corr_axis3(2*N_hist[2]-1, 0.0);
 
-    int translation_axis1;
-    int translation_axis2;
-    int translation_axis3;
+    ///compute corr function for axis1--------------------------------------------------------------------------------------------------------------
 
     get_corr_axis(hist1_axis1, hist2_axis1, corr_axis1, &translation_axis1);
 //    save_vector(corr_axis1, "corr_axis1.csv");
@@ -89,10 +118,11 @@ void get_translation(pcl::PointCloud<pcl::PointNormal>::Ptr pointNormals_src, pc
     float delta1=(float)(axis_lim[0][1]-axis_lim[0][0]) / (float)(N_hist[0]);
     float delta_axis1 = (translation_axis1-N_hist[0]+1) * delta1;
 
-    float x1 = delta_axis1*axis[0][0];
-    float y1 = delta_axis1*axis[0][1];
-    float z1 = delta_axis1*axis[0][2];
+    ///--------------------------------------------
 
+    float x1 = delta_axis1*local_frame[0][0];
+    float y1 = delta_axis1*local_frame[0][1];
+    float z1 = delta_axis1*local_frame[0][2];
 
     ///compute corr function for axis2--------------------------------------------------------------------------------------------------------------
 
@@ -101,34 +131,46 @@ void get_translation(pcl::PointCloud<pcl::PointNormal>::Ptr pointNormals_src, pc
 
     float delta2 = (float)(axis_lim[1][1] - axis_lim[1][0]) / (float)(N_hist[1]);
 
-    std::vector<float> axis_y (3);
-    axis_y[0]=axis[2][1]*axis[0][2]-axis[2][2]*axis[0][1];
-    axis_y[1]=axis[2][2]*axis[0][0]-axis[2][0]*axis[0][2];
-    axis_y[2]=axis[2][0]*axis[0][1]-axis[2][1]*axis[0][0];
-//    save_axis(axis_y, "axis_y1.csv");
-
     float dot = axis[0][0]*axis[1][0]+axis[0][1]*axis[1][1]+axis[0][2]*axis[1][2];
+    double alpha01 = acos(dot);
 
-    double alpha = acos(dot);
     double delta_m = (translation_axis2 - N_hist[1] + 1) * delta2;
-    double delta_axis2 = (-delta_axis1*cos(alpha) + delta_m)/sin(alpha); // if normals oriented inside
+    double delta_axis2 = ( delta_m - delta_axis1*cos(alpha01) )/sin(alpha01);
 
-    ///------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+    ///-------------------------------------------
 
-    float x2=delta_axis2*axis_y[0];
-    float y2=delta_axis2*axis_y[1];
-    float z2=delta_axis2*axis_y[2];
+    float x2=delta_axis2*local_frame[1][0];
+    float y2=delta_axis2*local_frame[1][1];
+    float z2=delta_axis2*local_frame[1][2];
 
     ///compute corr function for axis3--------------------------------------------------------------------------------------------------------------
 
     get_corr_axis(hist1_axis3, hist2_axis3, corr_axis3, &translation_axis3);
-//    save_vector(corr_axis3, "corr_axis3.csv");
+//    save_vector(corr_axis2, "corr_axis2.csv");
 
-    float delta3=(float)(  (axis_lim[2][1]-axis_lim[2][0])/(float)(N_hist[2])  );
+    float delta3 = (float)(axis_lim[2][1] - axis_lim[2][0]) / (float)(N_hist[2]);
 
-    float x3=(translation_axis3-N_hist[2]+1)*delta3*axis[2][0];
-    float y3=(translation_axis3-N_hist[2]+1)*delta3*axis[2][1];
-    float z3=(translation_axis3-N_hist[2]+1)*delta3*axis[2][2];
+    dot = local_frame[1][0]*axis[2][0]+local_frame[1][1]*axis[2][1]+local_frame[1][2]*axis[2][2];
+    double alpha12 = acos(dot);
+    dot = local_frame[0][0]*axis[2][0]+local_frame[0][1]*axis[2][1]+local_frame[0][2]*axis[2][2];
+    double alpha02 = acos(dot);
+
+    double delta_n = (translation_axis3 - N_hist[2] + 1) * delta3;
+    double delta_axis3 = ( (delta_n - delta_axis1*cos(alpha02))/sin(alpha02) - delta_axis2*cos(alpha12) ) / sin(alpha12);
+
+    ///-------------------------------------------
+
+    float x3=delta_axis3*local_frame[2][0];
+    float y3=delta_axis3*local_frame[2][1];
+    float z3=delta_axis3*local_frame[2][2];
+
+    dot = axis[2][0]*local_frame[2][0]+axis[2][1]*local_frame[2][1]+axis[2][2]*local_frame[2][2];
+    if(dot<0)
+    {
+        x3=-x3;
+        y3=-y3;
+        z3=-z3;
+    }
 
     ///compute total transformation matrix--------------------------------------------------------------------------------------------------------------
 

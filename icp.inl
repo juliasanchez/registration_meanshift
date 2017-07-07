@@ -9,6 +9,7 @@ void icp(pcl::PointCloud<pcl::PointNormal>::Ptr cloud1, pcl::PointCloud<pcl::Poi
         icp.addCorrespondenceRejector(rej);
         icp.setMaxCorrespondenceDistance(rej_dist);
         icp.setMaximumIterations((int)(it/2));
+        icp.setTransformationEpsilon(0.0000001);
 
         icp.setInputSource(cloud1);
         icp.setInputTarget(cloud2);

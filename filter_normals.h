@@ -6,7 +6,7 @@
 
 typedef pcl::PointXYZ pcl_point;
 
-void filter_normals(pcl::PointCloud<pcl_point>::Ptr normals, float radius, float perc);
+void filter_normals(pcl::PointCloud<pcl_point>::Ptr normals, float radius, float perc, std::vector< int >& ind);
 
 #include "filter_normals.inl"
 

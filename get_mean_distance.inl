@@ -1,11 +1,7 @@
-void get_mean_distance(pcl::PointCloud<pcl_point> cloud_src, pcl::PointCloud<pcl_point> cloud_tgt, Eigen::Matrix4f* transform, float* mean_distance)
+void get_mean_distance(pcl::PointCloud<pcl_point>::Ptr cloud_src, pcl::KdTreeFLANN<pcl_point>::Ptr tree, Eigen::Matrix4f* transform, float* mean_distance)
 {
     //transform
-    pcl::transformPointCloud (cloud_src, cloud_src, *transform);
-    pcl::KdTreeFLANN<pcl::PointXYZ> tree;
-    pcl::PointCloud<pcl_point>::Ptr cloud_src_ptr(new pcl::PointCloud<pcl_point>);
-    *cloud_src_ptr=cloud_src;
-    tree.setInputCloud(cloud_src_ptr);
+    pcl::transformPointCloud (*cloud_src, *cloud_src, *transform);
 
     //compute mean_distance
 
