@@ -51,9 +51,7 @@ void cloud<points>::sample(float samp)
     pcl::UniformSampling<points> uniform_sampling;
     uniform_sampling.setInputCloud (cloud_in);
     uniform_sampling.setRadiusSearch (samp);
-    std::cout << "before : " << cloud_in->size ()<<std::endl;
     uniform_sampling.filter (*cloud_in);
-    std::cout << " after sampling : " << cloud_in->size () << std::endl<<std::endl;
 }
 
 template<typename points>

@@ -50,7 +50,7 @@ int main(int argc, char *argv[])
     ///preprocess clouds--------------------------------------------------------------------------------------------------------------
     ///
 
-    std::string output=argv[11];
+    std::string output=argv[10];
 
     auto t_tot1 = std::chrono::high_resolution_clock::now();
 
@@ -102,24 +102,19 @@ int main(int argc, char *argv[])
 //    pcl::io::savePCDFileASCII ("normals1_before.pcd", *normals1);
 //    pcl::io::savePCDFileASCII ("normals2_before.pcd", *normals2);
 
-    pcl::RandomSample<pcl_point> rand_filter(true);
-
     std::cout<<"cloud source: normal points kept for filtering by density: "<<normals1->points.size()<<std::endl;
     std::cout<<"cloud target: normal points kept for filtering by density : "<<normals2->points.size()<<std::endl<<std::endl;
 
-    float perc = atof(argv[6]);
-    float radius =atof(argv[7]);
+    float radius =atof(argv[6]);
+    int keep =atoi(argv[7]);
 
-    int neigh=normals1->size()*perc;
-    std::cout<<"minimum neighbors : "<<neigh<<std::endl;
-    density_filter(normals1, radius, (int)neigh/2);
-    density_filter(normals1, radius, neigh);
+//    density_filter(normals1, radius, (int)neigh/2);
+    density_filter(normals1, radius, keep);
 
 
-    neigh=normals2->size()*perc;
-    std::cout<<"minimum neighbors : "<<neigh<<std::endl<<std::endl;
-    density_filter(normals2, radius, (int)neigh/2);
-    density_filter(normals2, radius, neigh);
+//    density_filter(normals2, radius, (int)neigh/2);
+    density_filter(normals2, radius, keep);
+
 //    pcl::io::savePCDFileASCII ("normals1_after.pcd", *normals1);
 //    pcl::io::savePCDFileASCII ("normals2_after.pcd", *normals2);
 
@@ -150,22 +145,6 @@ int main(int argc, char *argv[])
     ///find clusters with meanshift computation
     auto t_meanshifts1 = std::chrono::high_resolution_clock::now();
 
-    std::cout<<"cloud source: points number : "<<normals1->points.size()<<std::endl;
-    std::cout<<"cloud target: points number : "<<normals2->points.size()<<std::endl<<std::endl;
-
-    int meanshift_points=atoi(argv[8]);
-
-    rand_filter.setSample (meanshift_points);
-    if(meanshift_points<normals1->points.size())
-    {
-        rand_filter.setInputCloud (normals1);
-        rand_filter.filter(*normals1);
-    }
-    if(meanshift_points<normals2->points.size())
-    {
-        rand_filter.setInputCloud (normals2);
-        rand_filter.filter(*normals2);
-    }
     std::cout<<"cloud source: normal points kept for meanshift : "<<normals1->points.size()<<std::endl;
     std::cout<<"cloud target: normal points kept for meanshift : "<<normals2->points.size()<<std::endl<<std::endl;
 
@@ -194,6 +173,7 @@ int main(int argc, char *argv[])
     std::cout<<"number of clusters found in target : "<<clusters2.size()<<std::endl<<std::endl;
 
     auto t_meanshifts2 = std::chrono::high_resolution_clock::now();
+    std::chrono::duration_cast<std::chrono::milliseconds>(t_meanshifts2-t_meanshifts1).count();
     std::cout<<"total time to get clusters with meanshift :" << std::chrono::duration_cast<std::chrono::milliseconds>(t_meanshifts2-t_meanshifts1).count()<<" milliseconds"<<std::endl<<std::endl;
 
     for (int i=0; i<clusters1.size(); i++)
@@ -219,23 +199,23 @@ int main(int argc, char *argv[])
     sort(clusters1.begin(), clusters1.end(),comp_clus);
     sort(clusters2.begin(), clusters2.end(),comp_clus);
 
-    int n_clus1=std::min(6,(int)clusters1.size());
-    int n_clus2=std::min(6,(int)clusters2.size());
+//    int n_clus1=std::min(6,(int)clusters1.size());
+//    int n_clus2=std::min(6,(int)clusters2.size());
 
-    vector<Cluster> clusters1_test;
-    vector<Cluster> clusters2_test;
-    for(int i=0; i<n_clus1; i++)
-    {
-        clusters1_test.push_back(clusters1[i]);
-    }
-    for(int i=0; i<n_clus2; i++)
-    {
-        clusters2_test.push_back(clusters2[i]);
-    }
-    clusters1.clear();
-    clusters1=clusters1_test;
-    clusters2.clear();
-    clusters2=clusters2_test;
+//    vector<Cluster> clusters1_test;
+//    vector<Cluster> clusters2_test;
+//    for(int i=0; i<n_clus1; i++)
+//    {
+//        clusters1_test.push_back(clusters1[i]);
+//    }
+//    for(int i=0; i<n_clus2; i++)
+//    {
+//        clusters2_test.push_back(clusters2[i]);
+//    }
+//    clusters1.clear();
+//    clusters1=clusters1_test;
+//    clusters2.clear();
+//    clusters2=clusters2_test;
 
     for(int clus = 0; clus < clusters1.size(); clus++)
     {
@@ -293,37 +273,6 @@ int main(int argc, char *argv[])
     filter_walls(pointNormals_src, vec_normals1);
     filter_walls(pointNormals_tgt, vec_normals2);
 
-  /// get main walls and their normal to perform translation search. these normals become axis
-
-      //choisir le nuage qui a le moins de clusters comme target
-      std::vector<std::vector<float>> axis(3, std::vector<float>(3, 0.0));
-      std::vector<Cluster> clusters;
-
-      bool modif_axis;
-      if(clusters1.size()>=clusters2.size())
-      {
-          clusters=clusters2;
-          modif_axis=false;
-      }
-      else
-        {
-          clusters=clusters1;
-          modif_axis=true;
-        }
-
-      bool error;
-      get_axis(clusters, axis, &error);
-
-      save_axis(axis[0], "axis_x.csv");
-      save_axis(axis[1], "axis_y.csv");
-      save_axis(axis[2], "axis_z.csv");
-
-      if(error)
-      {
-          std::cout<<"error : not enough normals to get clusters, please increase number of normals"<<std::endl<<std::endl;
-          return 0;
-      }
-
     ///--------------------------------Loop to test all pairs combination between source and target----------------------------------------------------------------------
 
 
@@ -353,7 +302,7 @@ int main(int argc, char *argv[])
     std::cout<<"number of pairs of cloud 2 : "<<pairs2.size()<<std::endl<<std::endl;
     std::cout<<"number of trials : "<<pairs1.size()*pairs2.size()<<std::endl<<std::endl;
 
-    float bin_width=atof(argv[9]);
+    float bin_width=atof(argv[8]);
     float lim = 0.99;
     std::vector<int> LCP_vec(pairs1.size()*clusters2.size()*clusters2.size());
     std::vector<Eigen::Matrix4f> total_transform_vec(pairs1.size()*clusters2.size()*clusters2.size());
@@ -361,7 +310,7 @@ int main(int argc, char *argv[])
 
     //sample clouds to speed up transform and LCP calculation
 
-    float LCP_samp = atof(argv[10]);
+    float LCP_samp = atof(argv[9]);
     pcl::UniformSampling<pcl_point> uniform_sampling;
     uniform_sampling.setRadiusSearch (LCP_samp);
     uniform_sampling.setInputCloud (cloud_src);
@@ -376,7 +325,8 @@ int main(int argc, char *argv[])
 
     auto t_loop1= std::chrono::high_resolution_clock::now();
 
-    #pragma omp parallel for schedule(dynamic) firstprivate(pairs1, bin_width, lim, clusters1, clusters2, pointNormals_src, pointNormals_tgt, axis, cloud_src, tree_tgt ) shared( LCP_vec, total_transform_vec )
+    #pragma omp parallel for schedule(dynamic) firstprivate(pairs1, bin_width, lim, clusters1, clusters2, pointNormals_src, pointNormals_tgt, cloud_src, tree_tgt ) shared( LCP_vec, total_transform_vec )
+
 
     for (int w=0; w<pairs1.size(); w++)
     {
@@ -401,35 +351,41 @@ int main(int argc, char *argv[])
             dot=walls2[0][0]*walls2[1][0]+walls2[0][1]*walls2[1][1]+walls2[0][2]*walls2[1][2];
             float al2=acos(dot);
 
+
+            /// get main walls and their normal to perform translation search. these normals represent translation axis
+
+
+                //choisir le nuage qui a le moins de clusters comme target
+                std::vector<std::vector<float>> axis(3, std::vector<float>(3, 0.0));
+
+                for(int i=0; i<3; i++)
+                {
+                    axis[0][i]=walls2[0][i];
+                    axis[1][i]=walls2[1][i];
+                }
+
+                bool error;
+                get_axis(clusters2, axis, &error);
+
+                if(error)
+                {
+                    std::cout<<"error : not enough normals to get clusters, please increase number of normals"<<std::endl<<std::endl;
+                    break;
+                }
+
+
             int LCP=0;
 
             if (abs(al1-al2)<0.05)  //checking if angles are the same
             {
-
                 pcl::PointCloud<pcl::PointNormal> source;
                 pcl::PointCloud<pcl::PointNormal> target;
 
                 pcl::copyPointCloud(*pointNormals_src,source);
                 pcl::copyPointCloud(*pointNormals_tgt,target);
-
-                ///rotate cloud in the accurate way with rotation information--------------------------------------------------------------------------------------------------------------------------------------
                 Eigen::Matrix4f rotation_transform = Eigen::Matrix4f::Identity();
                 get_rotation(walls1, walls2, &rotation_transform);
-
-                pcl::transformPointCloudWithNormals (source, source, rotation_transform);
-                std::vector<std::vector<float>> temp(3, std::vector<float>(3, 0.0));
-                temp=axis;
-                ///TURN AXIS IF THEY COME FROM SOURCE
-                if(modif_axis)
-                {
-                    for (int h=0; h<3; h++)
-                    {
-                        for (int g=0; g<3; g++)
-                        {
-                            temp[h][g]=axis[h][0]*rotation_transform(g,0)+axis[h][1]*rotation_transform(g,1)+axis[h][2]*rotation_transform(g,2);
-                        }
-                    }
-                }
+                pcl::transformPointCloudWithNormals (source, source, rotation_transform);           
 
                 ///get translation with histograms correlation
 
@@ -438,8 +394,7 @@ int main(int argc, char *argv[])
                 pcl::PointCloud<pcl::PointNormal>::Ptr target_ptr(new pcl::PointCloud<pcl::PointNormal>);
                 *source_ptr=source;
                 *target_ptr=target;
-
-                get_translation(source_ptr, target_ptr, lim, temp, bin_width, &translation_transform) ;
+                get_translation(source_ptr, target_ptr, lim, axis, bin_width, &translation_transform) ;
 
                 Eigen::Matrix4f total_transform = Eigen::Matrix4f::Zero();
                 total_transform=rotation_transform+translation_transform;
@@ -479,24 +434,24 @@ int main(int argc, char *argv[])
 
     ///do one icp step-----------------------------------------------------------------------------------------------------------------------------------------------------
 
-    pcl::UniformSampling<pcl::PointNormal> uniform_sampling_n;
-    uniform_sampling_n.setRadiusSearch (sample*2);
-    uniform_sampling_n.setInputCloud (pointNormals_src);
-    uniform_sampling_n.filter (*pointNormals_src);
-    uniform_sampling_n.setInputCloud (pointNormals_tgt);
-    uniform_sampling_n.filter (*pointNormals_tgt);
+//    pcl::UniformSampling<pcl::PointNormal> uniform_sampling_n;
+//    uniform_sampling_n.setRadiusSearch (sample*2);
+//    uniform_sampling_n.setInputCloud (pointNormals_src);
+//    uniform_sampling_n.filter (*pointNormals_src);
+//    uniform_sampling_n.setInputCloud (pointNormals_tgt);
+//    uniform_sampling_n.filter (*pointNormals_tgt);
 
-    std::cout<<"points number for icp: "<<pointNormals_src->size()<<std::endl;
-    std::cout<<"points number for icp: "<<pointNormals_tgt->size()<<std::endl<<std::endl;
+//    std::cout<<"points number for icp: "<<pointNormals_src->size()<<std::endl;
+//    std::cout<<"points number for icp: "<<pointNormals_tgt->size()<<std::endl<<std::endl;
 
-    pcl::transformPointCloudWithNormals (*pointNormals_src, *pointNormals_src, good_transform);
-    Eigen::Matrix4f icp_transform;
-    Eigen::Matrix4f final_transform;
-    icp(pointNormals_src, pointNormals_tgt, 0.01, 0.2, 30, &icp_transform);
-    final_transform=icp_transform*good_transform;
+//    pcl::transformPointCloudWithNormals (*pointNormals_src, *pointNormals_src, good_transform);
+//    Eigen::Matrix4f icp_transform;
+//    Eigen::Matrix4f final_transform;
+//    icp(pointNormals_src, pointNormals_tgt, 0.05, 0.4, 50, &icp_transform);
+//    final_transform=icp_transform*good_transform;
 
-    auto t_tot2 = std::chrono::high_resolution_clock::now();
-    std::cout<<"total time to get transform with icp refinement :" <<std::chrono::duration_cast<std::chrono::milliseconds>(t_tot2-t_tot1).count()<<" milliseconds"<<std::endl<<std::endl;
+//    auto t_tot2 = std::chrono::high_resolution_clock::now();
+//    std::cout<<"total time to get transform with icp refinement :" <<std::chrono::duration_cast<std::chrono::milliseconds>(t_tot2-t_tot1).count()<<" milliseconds"<<std::endl<<std::endl;
 
     ///save best transformation in build/results/transformations and the time
 
@@ -533,15 +488,17 @@ int main(int argc, char *argv[])
         std::string file_name_tot = sstm.str();
         ofstream file (file_name_tot);
         file<<good_transform;
-        file<<"\n";
-        file<<final_transform;
+//        file<<"\n";
+//        file<<final_transform;
         file<<"\n";
         file<<std::chrono::duration_cast<std::chrono::milliseconds>(t_meth-t_tot1).count();
+        file<<"\n";
+        file<<std::chrono::duration_cast<std::chrono::milliseconds>(t_meanshifts2-t_meanshifts1).count();
         file<<"\n";
         file<<reso1<<" "<<reso2;
         file.close();
 
-        std::cout<<"result transformation :"<<std::endl<<final_transform<<std::endl<<std::endl;
+//        std::cout<<"result transformation :"<<std::endl<<final_transform<<std::endl<<std::endl;
 
         file.open("/home/julia/Desktop/my_programs/hist_registration/build-hist_registration/results/Times", std::ofstream::out | std::ofstream::app);
 //        file<<"\n"<<"\n"<<"\n"

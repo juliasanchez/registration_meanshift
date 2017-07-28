@@ -25,9 +25,9 @@ void get_translation(pcl::PointCloud<pcl::PointNormal>::Ptr pointNormals_src, pc
         }
     }
 
-    save_axis(local_frame[0], "axis_local_x.csv");
-    save_axis(local_frame[1], "axis_local_y.csv");
-    save_axis(local_frame[2], "axis_local_z.csv");
+//    save_axis(local_frame[0], "axis_local_x.csv");
+//    save_axis(local_frame[1], "axis_local_y.csv");
+//    save_axis(local_frame[2], "axis_local_z.csv");
 
     ///get histograms--------------------------------------------------------------------------------------------------------------
     std::vector<std::vector<float>> axis_lim(3,std::vector<float>(2,0.0));
@@ -57,7 +57,6 @@ void get_translation(pcl::PointCloud<pcl::PointNormal>::Ptr pointNormals_src, pc
     get_lim_axis(cloud_src_filtered2, cloud_tgt_filtered2, axis[1], axis_lim[1]);
     N_hist[1]=(int)(round((axis_lim[1][1]-axis_lim[1][0])/bin_width));
 
-
     //filter clouds to keep ground and roof on z--------------------------------------------------------------------------------------------------------------
     pcl::PointCloud<pcl_point>::Ptr cloud_src_filtered3(new pcl::PointCloud<pcl_point>);
     pcl::PointCloud<pcl_point>::Ptr cloud_tgt_filtered3(new pcl::PointCloud<pcl_point>);
@@ -70,7 +69,6 @@ void get_translation(pcl::PointCloud<pcl::PointNormal>::Ptr pointNormals_src, pc
     get_lim_axis(cloud_src_filtered3, cloud_tgt_filtered3, axis[2], axis_lim[2]);
     N_hist[2]=(int)(round((axis_lim[2][1]-axis_lim[2][0])/bin_width));
 
-
     std::vector<float> hist1_axis1(N_hist[0], 0.0);
     std::vector<float> hist2_axis1(N_hist[0], 0.0);
     std::vector<float> hist1_axis2(N_hist[1], 0.0);
@@ -79,6 +77,7 @@ void get_translation(pcl::PointCloud<pcl::PointNormal>::Ptr pointNormals_src, pc
     std::vector<float> hist2_axis3(N_hist[2], 0.0);
 
     get_hist_axis(axis_lim[0], axis[0], cloud_src_filtered1, hist1_axis1);
+    save_vector (hist1_axis1, "hist1_axis1.csv");
     get_hist_axis(axis_lim[0], axis[0], cloud_tgt_filtered1, hist2_axis1);
 
     get_hist_axis(axis_lim[1], axis[1], cloud_src_filtered2, hist1_axis2);
@@ -127,6 +126,7 @@ void get_translation(pcl::PointCloud<pcl::PointNormal>::Ptr pointNormals_src, pc
     ///compute corr function for axis2--------------------------------------------------------------------------------------------------------------
 
     get_corr_axis(hist1_axis2, hist2_axis2, corr_axis2, &translation_axis2);
+
 //    save_vector(corr_axis2, "corr_axis2.csv");
 
     float delta2 = (float)(axis_lim[1][1] - axis_lim[1][0]) / (float)(N_hist[1]);

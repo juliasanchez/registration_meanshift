@@ -3,6 +3,7 @@
 
 #include <iostream>
 #include <string>
+#include "save_vector.h"
 
 typedef pcl::PointXYZ pcl_point;
 

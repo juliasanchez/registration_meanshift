@@ -8,18 +8,52 @@ void pre_process(std::string pcd_file,float sample, float normal_radius, int dis
     sample=std::min(sample,N_points);
     auto t_tot2= std::chrono::high_resolution_clock::now();
     std::cout<<"total time to load clouds :" <<std::chrono::duration_cast<std::chrono::milliseconds>(t_tot2-t_tot1).count()<<" milliseconds"<<std::endl<<std::endl;
-    cloud_src.sample(sample);
+    cloud_src.sample(0.01);
     cloud_src.clean();
     cloud_src.transform(matrix_transform);
 
     cloud_src.setTree();
-    *reso=cloud_src.computeCloudResolution ();
-    if(normal_radius==0)
-    {
-    normal_radius=*reso*4;
-    }
     std::cout<<"normal_radius : "<<normal_radius<<std::endl<<std::endl;
     cloud_src.getNormals(normal_radius, normals);
+
+    std::cout << " before sampling : " << cloud_in->size () << std::endl<<std::endl;
+    pcl::PointCloud<pcl::PointNormal>::Ptr pointNormals(new pcl::PointCloud<pcl::PointNormal>);
+    pcl::concatenateFields (*cloud_in, *normals, *pointNormals);
+
+    pcl::UniformSampling<pcl::PointNormal> uniform_sampling_n;
+    uniform_sampling_n.setRadiusSearch (sample);
+    uniform_sampling_n.setInputCloud (pointNormals);
+    uniform_sampling_n.filter (*pointNormals);
+
+
+    cloud_in->width    = pointNormals->points.size();
+    cloud_in->height   = 1;
+    cloud_in->is_dense = false;
+    cloud_in->points.resize (pointNormals->points.size());
+
+    normals->width    = pointNormals->points.size();
+    normals->height   = 1;
+    normals->is_dense = false;
+    normals->points.resize (pointNormals->points.size());
+
+
+    for (int i=0; i<cloud_in->points.size(); i++)
+    {
+        cloud_in->points[i].x=pointNormals->points[i].x;
+        cloud_in->points[i].y=pointNormals->points[i].y;
+        cloud_in->points[i].z=pointNormals->points[i].z;
+    }
+
+    for (int i=0; i<cloud_in->points.size(); i++)
+    {
+        normals->points[i].normal_x=pointNormals->points[i].normal_x;
+        normals->points[i].normal_y=pointNormals->points[i].normal_y;
+        normals->points[i].normal_z=pointNormals->points[i].normal_z;
+    }
+
+    std::cout << " after sampling : " << cloud_in->size () << std::endl<<std::endl;
+    cloud_src.setTree();
+    *reso=cloud_src.computeCloudResolution ();
 
     if (display)
     {
