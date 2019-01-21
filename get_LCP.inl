@@ -9,19 +9,15 @@ void get_LCP(pcl::PointCloud<pcl_point>::Ptr cloud_src, pcl::KdTreeFLANN<pcl_poi
     *LCP=0;
     int n=0;
 
-    std::vector<int> pointIdxNKNSearch(1);
-    std::vector<float> pointNKNSquaredDistance(1);
+    std::vector<int> pointIdxRadiusSearch(1);
+    std::vector<float> pointRadiusSquaredDistance(1);
 
     for (int k=0; k<cloud_src_transformed.size(); k++)
     {
-
-        if ( tree->nearestKSearch (cloud_src_transformed.points[k], 1, pointIdxNKNSearch, pointNKNSquaredDistance) > 0 )
-        {
-            if(sqrt(pointNKNSquaredDistance[0])<thresh)
-            {
-                *LCP=*LCP+1;
-                n++;
-            }
-        }
+         if ( tree->radiusSearch (cloud_src_transformed.points[k], thresh, pointIdxRadiusSearch, pointRadiusSquaredDistance) > 0 )
+         {
+             *LCP=*LCP+1;
+             n++;
+         }
     }
 }
