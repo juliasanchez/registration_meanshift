@@ -15,37 +15,36 @@
 #include <pcl/search/kdtree.h>
 #include <pcl/filters/statistical_outlier_removal.h>
 #include <pcl/filters/passthrough.h>
-#include <pcl/filters/uniform_sampling.h>
 #include <pcl/filters/conditional_removal.h>
 #include <pcl/filters/random_sample.h>
+#include <pcl/octree/octree_pointcloud.h>
+#define EIGEN_USE_NEW_STDVECTOR
+#include "/usr/local/include/eigen3/Eigen/StdVector"
 
-#if defined _MSC_VER
-#pragma warning (disable: 4996) // MT
-#endif
+#include "filter_far.h"
 
 template<typename points>
 class cloud
 {
 public:
-	cloud();
-	void setInputCloud(typename pcl::PointCloud<points>::Ptr&);
-        void setTree();
-        void getScale(float*);
-	void clean();
-	void getInputCloud(typename pcl::PointCloud<points>::Ptr);
-        void getNormals(float, typename pcl::PointCloud<pcl::Normal>::Ptr);
-	void getSize(int*);
-	void load (std::string);
-	double computeCloudResolution ();
-        void sample(float samp);
-        void rand_sample(float samp);
-        void transform( Eigen::Matrix4f matrix_transform);
+    cloud();
+    void setInputCloud(typename pcl::PointCloud<points>::Ptr);
+    void setTree();
+    void getScale(float*);
+    void clean(float far);
+    void getInputCloud(typename pcl::PointCloud<points>::Ptr);
+    void getNormals(float);
+    int getSize() const;
+    void load (std::string);
+    double computeCloudResolution () const;
+    void sample(float samp);
+    void rand_sample(float samp);
+    void orient() const;
 
 
 private:
-	typename pcl::PointCloud<points>::Ptr cloud_in;  //(new pcl::PointCloud<points>);
-	int size;
-	typename pcl::search::KdTree<points> tree;
+    typename pcl::PointCloud<points>::Ptr cloud_in;
+    typename pcl::search::KdTree<points> tree;
 };
 
 #include "cloud.inl"

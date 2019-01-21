@@ -6,7 +6,7 @@
 #include <list>
 #include "vecMed.h"
 
-void envelope(std::vector<float> corr, int neigh, std::vector<float>* env);
+void envelope(std::vector<float>& corr, int neigh, std::vector<float>& env);
 
 #include "envelope.inl"
 

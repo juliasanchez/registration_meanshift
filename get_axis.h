@@ -6,7 +6,7 @@
 
 typedef pcl::PointXYZ pcl_point;
 
-void get_axis(std::vector<Cluster> clusters, std::vector< std::vector <float> >& axis, bool* error );
+void get_axis(std::vector<Cluster> &clusters, std::vector< std::vector <float> >& axis, bool* error );
 
 #include "get_axis.inl"
 

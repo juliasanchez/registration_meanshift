@@ -1,4 +1,4 @@
-void filter_walls(pcl::PointCloud<pcl::PointNormal>::Ptr cloud_in, std::vector<vector<double>> normals)
+void filter_walls(pcl::PointCloud<pcl::PointNormal>::Ptr cloud_in, std::vector<std::vector<double>>& normals)
 {
     pcl::PointCloud<pcl::PointNormal>::Ptr cloud_filtered(new pcl::PointCloud<pcl::PointNormal>);
     std::vector<float> dot(normals.size());

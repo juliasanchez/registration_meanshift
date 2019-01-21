@@ -17,7 +17,7 @@ void cloud<points>::getScale(float* Volume)
 
 
 template<typename points>
-void cloud<points>::setInputCloud(typename pcl::PointCloud<points>::Ptr &cloudin)
+void cloud<points>::setInputCloud(typename pcl::PointCloud<points>::Ptr cloudin)
 {
 	cloud_in=cloudin;
 }
@@ -29,15 +29,34 @@ void cloud<points>::getInputCloud(typename pcl::PointCloud<points>::Ptr cloudout
 }
 
 template<typename points>
-void cloud<points>::getNormals(float radius, typename pcl::PointCloud<pcl::Normal>::Ptr normals)
+void cloud<points>::getNormals(float radius)
 {
-        pcl::NormalEstimationOMP<points, pcl::Normal> normal_estimation;
-	normal_estimation.setSearchMethod(typename pcl::search::KdTree<points>::Ptr(new pcl::search::KdTree<points>));
-	normal_estimation.setRadiusSearch(radius);
+    if(cloud_in->points[0].normal_x==0)
+    {
+        pcl::NormalEstimationOMP<points, points> normal_estimation;
+        setTree();
+        normal_estimation.setSearchMethod(boost::make_shared<pcl::search::KdTree<points>> (tree));
+        normal_estimation.setRadiusSearch(radius);
         normal_estimation.setViewPoint (0, 0, 0);
 	normal_estimation.setInputCloud(cloud_in);
-        normal_estimation.compute(*normals);
+        normal_estimation.compute(*cloud_in);
+    }
 }
+
+template<typename points>
+void cloud<points>::orient() const
+{
+    for (int i = 0; i<cloud_in->points.size(); ++i)
+    {
+        if( cloud_in->points[i].normal_x* cloud_in->points[i].x +  cloud_in->points[i].normal_y* cloud_in->points[i].y +  cloud_in->points[i].normal_z* cloud_in->points[i].z < 0 )
+        {
+            cloud_in->points[i].normal_x *= -1;
+            cloud_in->points[i].normal_y *= -1;
+            cloud_in->points[i].normal_z *= -1;
+        }
+    }
+}
+
 
 template<typename points>
 void cloud<points>::setTree()
@@ -48,10 +67,32 @@ void cloud<points>::setTree()
 template<typename points>
 void cloud<points>::sample(float samp)
 {
-    pcl::UniformSampling<points> uniform_sampling;
-    uniform_sampling.setInputCloud (cloud_in);
-    uniform_sampling.setRadiusSearch (samp);
-    uniform_sampling.filter (*cloud_in);
+    pcl::octree::OctreePointCloud<points> octree (samp);
+    octree.setInputCloud (cloud_in);
+    octree.defineBoundingBox ();
+    octree.addPointsFromInputCloud ();
+
+    std::vector<points, Eigen::aligned_allocator<points> > *pointGrid = new std::vector<pcl::PointNormal, Eigen::aligned_allocator<pcl::PointNormal> >;
+    octree.getOccupiedVoxelCenters (*pointGrid);
+
+    pcl::PointCloud<points> cloud_out;
+    cloud_out.resize(pointGrid->size());
+
+    std::vector<int> pointIdxNKNSearch(2);
+    std::vector<float> pointNKNSquaredDistance(2);
+
+    setTree();
+    for(int k=0; k<pointGrid->size(); ++k)
+    {
+        tree.nearestKSearch (pointGrid->at(k), 1, pointIdxNKNSearch, pointNKNSquaredDistance);
+        cloud_out.points[k] = cloud_in->points[pointIdxNKNSearch[0]];
+//        cloud_out.points[k] = pointGrid->at(k);
+    }
+
+    cloud_out.is_dense=true;
+    cloud_out.width=cloud_out.points.size();
+    cloud_out.height=1;
+    *cloud_in=cloud_out;
 }
 
 template<typename points>
@@ -61,89 +102,45 @@ void cloud<points>::rand_sample(float samp)
   sample.setInputCloud (cloud_in);
   sample.setSample (samp);
 
-  std::cout << "before : " << cloud_in->size ()<<std::endl;
   sample.filter(*cloud_in);
-  std::cout << " after sampling : " << cloud_in->size () << std::endl<<std::endl;
 }
 
 template<typename points>
-void cloud<points>::getSize(int *size)
+int cloud<points>::getSize() const
 {
-	*size=cloud_in->width*cloud_in->height;
+       return cloud_in->size();
 }
 
 template<typename points>
 void cloud<points>::load(std::string pcd_file)
 {
-	if( pcl::io::loadPCDFile<points>( pcd_file, *cloud_in ) == -1 )
-	{
-	    PCL_ERROR ("Couldn't read file test_pcd.pcd \n");
-	}
+    if( pcl::io::loadPCDFile<points>( pcd_file, *cloud_in ) == -1 )
+    {
+        PCL_ERROR ("Couldn't read file test_pcd.pcd \n");
+    }
 }
 
 template<typename points>
-void cloud<points>::clean()
+void cloud<points>::clean(float thresh)
 {
-    std::cout << "before cleaning : " << cloud_in->size ()<<std::endl;
-
     std::vector<int> indices;
     pcl::removeNaNFromPointCloud(*cloud_in, *cloud_in, indices);
-
-//    typename pcl::ConditionAnd<points>::Ptr condition (new pcl::ConditionAnd<points>);
-//    condition->addComparison(typename pcl::FieldComparison<points>::ConstPtr(new typename pcl::FieldComparison<points>("x", pcl::ComparisonOps::LT, 20)));
-//    condition->addComparison(typename pcl::FieldComparison<points>::ConstPtr(new typename pcl::FieldComparison<points>("y", pcl::ComparisonOps::LT, 20)));
-//    condition->addComparison(typename pcl::FieldComparison<points>::ConstPtr(new typename pcl::FieldComparison<points>("z", pcl::ComparisonOps::LT, 20)));
-//    condition->addComparison(typename pcl::FieldComparison<points>::ConstPtr(new typename pcl::FieldComparison<points>("x", pcl::ComparisonOps::GT, -20)));
-//    condition->addComparison(typename pcl::FieldComparison<points>::ConstPtr(new typename pcl::FieldComparison<points>("y", pcl::ComparisonOps::GT, -20)));
-//    condition->addComparison(typename pcl::FieldComparison<points>::ConstPtr(new typename pcl::FieldComparison<points>("z", pcl::ComparisonOps::GT, -20)));
-
-//    pcl::ConditionalRemoval<points> filter (condition);
-//    filter.setInputCloud(cloud_in);
-//    filter.filter(*cloud_in);
-
-    pcl::PassThrough<points> pass;
-    pass.setInputCloud (cloud_in);
-    pass.setFilterFieldName ("z");
-    pass.setFilterLimits (0.0,0.0);
-    pass.setFilterLimitsNegative (true);
-    pass.filter (*cloud_in);
-
-    std::cout << " after cleaning : " << cloud_in->size () << std::endl<<std::endl;
-
+    filter_far(cloud_in, thresh);
 }
 
 template<typename points>
-double cloud<points>::computeCloudResolution ()
+double cloud<points>::computeCloudResolution () const
 {
   double res = 0.0;
-  int n_points = 0;
   int nres;
   std::vector<int> indices (2);
   std::vector<float> sqr_distances (2);
 
   for (size_t i = 0; i < cloud_in->size (); ++i)
   {
-    if (! pcl_isfinite ((*cloud_in)[i].x))
-    {
-      continue;
-    }
-    //Considering the second neighbor since the first is the point itself.
     nres = tree.nearestKSearch (i, 2, indices, sqr_distances);
-    if (nres == 2)
-    {
-      res += sqrt (sqr_distances[1]);
-      ++n_points;
-    }
+    res += sqrt (sqr_distances[1]);
   }
-  if (n_points != 0)
-  {
-    res /= n_points;
-  }
+  res /= cloud_in->size ();
   return res;
-}
-
-template<typename points>
-void cloud<points>::transform( Eigen::Matrix4f matrix_transform)
-{
-    pcl::transformPointCloud (*cloud_in, *cloud_in, matrix_transform);
 }
