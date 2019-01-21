@@ -1,8 +1,1 @@
-/home/julia/Documents/data_base/patio_pp_exported_data/pcd/sampled/1_08cm/SW2.pcd /home/julia/Documents/data_base/patio_pp_exported_data/pcd/sampled/1_08cm/SW3.pcd 0.001 0 0.015 0.02 0.99 6000 0.01 0.5 30
-
-file1 file2 0.04 0 0.004 0.005 10000 0.02 0.2 
-
-/home/julia/Documents/data_base/leica/pcd/sampled/1_04cm/SW6.pcd /home/julia/Documents/data_base/leica/pcd/sampled/1_04cm/SW5.pcd 0.1 0.1 0 0.008 1000 0.1 0.4 eval
-
-/home/julia/Documents/data_base/osnabruck/dat_et4/normalized/pcd/scan051.pcd /home/julia/Documents/data_base/osnabruck/dat_et4/normalized/pcd/scan050.pcd 0.1 0.2 0 0.05 2000 0.1 0.1 eval_nuchter/50cm 30
-/home/julia/Documents/data_base/osnabruck/dat_et4/normalized/pcd/scan046.pcd /home/julia/Documents/data_base/osnabruck/dat_et4/normalized/pcd/scan045.pcd 0.1 0.5 0 0.05 2000 0.1 0.1 eval_nuchter/50cm 30
+/home/julia/Documents/database/hokuyo/no_sample/Hokuyo_5.pcd /home/julia/Documents/database/hokuyo/no_sample/Hokuyo_4.pcd 0.04 0.1 0.02 3000 0.01 0.06 test 200
