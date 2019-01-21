@@ -1,5 +1,8 @@
-void get_translation(pcl::PointCloud<pcl::PointNormal>::Ptr pointNormals_src, pcl::PointCloud<pcl::PointNormal>::Ptr pointNormals_tgt, float lim, std::vector<std::vector<float>> axis, float bin_width, Eigen::Matrix4f* translation_transform)
+void get_translation(pcl::PointCloud<pcl::PointNormal>::Ptr pointNormals_src, pcl::PointCloud<pcl::PointNormal>::Ptr pointNormals_tgt, float lim, std::vector<std::vector<float>> axis, float bin_width, bool sat, Eigen::Matrix4f* translation_transform)
 {
+    float div_fact=100;
+    if(!sat)
+        bin_width /= div_fact;
 
     /// compute local frame axis--------------------------------------------------------------------------------------------------------------
 
@@ -34,36 +37,43 @@ void get_translation(pcl::PointCloud<pcl::PointNormal>::Ptr pointNormals_src, pc
     std::vector<int> N_hist(3);
 
     //filter clouds to keep walls on x--------------------------------------------------------------------------------------------------------------
-    pcl::PointCloud<pcl_point>::Ptr cloud_src_filtered1(new pcl::PointCloud<pcl_point>);
-    pcl::PointCloud<pcl_point>::Ptr cloud_tgt_filtered1(new pcl::PointCloud<pcl_point>);
+    pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_src_filtered1(new pcl::PointCloud<pcl::PointXYZ>);
+    pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_tgt_filtered1(new pcl::PointCloud<pcl::PointXYZ>);
     get_walls(pointNormals_src, lim, axis[0], cloud_src_filtered1);
     get_walls(pointNormals_tgt, lim, axis[0], cloud_tgt_filtered1);
-//    pcl::io::savePCDFileASCII ("filtered_src_x.pcd", *cloud_src_filtered1);
-//    pcl::io::savePCDFileASCII ("filtered_tgt_x.pcd", *cloud_tgt_filtered1);
+
     if(cloud_src_filtered1->points.size()==0 || cloud_tgt_filtered1->points.size()==0)
     return;
     get_lim_axis(cloud_src_filtered1, cloud_tgt_filtered1, axis[0], axis_lim[0]);
     N_hist[0]=(int)(round((axis_lim[0][1]-axis_lim[0][0])/bin_width));
 
+//    pcl::io::savePCDFileASCII ("filt_src1.csv", *cloud_src_filtered1);
+//    pcl::io::savePCDFileASCII ("filt_tgt1.csv", *cloud_tgt_filtered1);
+
     //filter clouds to keep walls on y--------------------------------------------------------------------------------------------------------------
-    pcl::PointCloud<pcl_point>::Ptr cloud_src_filtered2(new pcl::PointCloud<pcl_point>);
-    pcl::PointCloud<pcl_point>::Ptr cloud_tgt_filtered2(new pcl::PointCloud<pcl_point>);
+    pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_src_filtered2(new pcl::PointCloud<pcl::PointXYZ>);
+    pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_tgt_filtered2(new pcl::PointCloud<pcl::PointXYZ>);
     get_walls(pointNormals_src, lim, axis[1], cloud_src_filtered2);
     get_walls(pointNormals_tgt, lim, axis[1], cloud_tgt_filtered2);
-//    pcl::io::savePCDFileASCII ("filtered_src_y.pcd", *cloud_src_filtered2);
-//    pcl::io::savePCDFileASCII ("filtered_tgt_y.pcd", *cloud_tgt_filtered2);
+
     if(cloud_src_filtered2->points.size()==0 || cloud_tgt_filtered2->points.size()==0)
     return;
     get_lim_axis(cloud_src_filtered2, cloud_tgt_filtered2, axis[1], axis_lim[1]);
     N_hist[1]=(int)(round((axis_lim[1][1]-axis_lim[1][0])/bin_width));
 
+//    pcl::io::savePCDFileASCII ("filt_src2.csv", *cloud_src_filtered2);
+//    pcl::io::savePCDFileASCII ("filt_tgt2.csv", *cloud_tgt_filtered2);
+
     //filter clouds to keep ground and roof on z--------------------------------------------------------------------------------------------------------------
-    pcl::PointCloud<pcl_point>::Ptr cloud_src_filtered3(new pcl::PointCloud<pcl_point>);
-    pcl::PointCloud<pcl_point>::Ptr cloud_tgt_filtered3(new pcl::PointCloud<pcl_point>);
+    pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_src_filtered3(new pcl::PointCloud<pcl::PointXYZ>);
+    pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_tgt_filtered3(new pcl::PointCloud<pcl::PointXYZ>);
     get_walls(pointNormals_src, lim, axis[2], cloud_src_filtered3);
     get_walls(pointNormals_tgt, lim, axis[2], cloud_tgt_filtered3);
-//    pcl::io::savePCDFileASCII ("filtered_src_z.pcd", *cloud_src_filtered3);
-//    pcl::io::savePCDFileASCII ("filtered_tgt_z.pcd", *cloud_tgt_filtered3);
+
+//    pcl::io::savePCDFileASCII ("filt_src3.csv", *cloud_src_filtered3);
+//    pcl::io::savePCDFileASCII ("filt_tgt3.csv", *cloud_tgt_filtered3);
+//    pcl::io::savePCDFileASCII ("before_filt_src.csv", *pointNormals_src);
+
     if(cloud_src_filtered3->points.size()==0 || cloud_tgt_filtered3->points.size()==0)
     return;
     get_lim_axis(cloud_src_filtered3, cloud_tgt_filtered3, axis[2], axis_lim[2]);
@@ -76,30 +86,18 @@ void get_translation(pcl::PointCloud<pcl::PointNormal>::Ptr pointNormals_src, pc
     std::vector<float> hist1_axis3(N_hist[2], 0.0);
     std::vector<float> hist2_axis3(N_hist[2], 0.0);
 
-    get_hist_axis(axis_lim[0], axis[0], cloud_src_filtered1, hist1_axis1);
-    save_vector (hist1_axis1, "hist1_axis1.csv");
-    get_hist_axis(axis_lim[0], axis[0], cloud_tgt_filtered1, hist2_axis1);
+    bool moy= !sat;
+    get_hist_axis(axis_lim[0], axis[0], cloud_src_filtered1, moy, hist1_axis1);  // moy corresponds to the activation or not of the mean filter on the histogram (if the bins are very small)
+    get_hist_axis(axis_lim[0], axis[0], cloud_tgt_filtered1, moy, hist2_axis1);
 
-    get_hist_axis(axis_lim[1], axis[1], cloud_src_filtered2, hist1_axis2);
-    get_hist_axis(axis_lim[1], axis[1], cloud_tgt_filtered2, hist2_axis2);
+    get_hist_axis(axis_lim[1], axis[1], cloud_src_filtered2, moy, hist1_axis2);
+    get_hist_axis(axis_lim[1], axis[1], cloud_tgt_filtered2, moy, hist2_axis2);
 
-    get_hist_axis(axis_lim[2], axis[2], cloud_src_filtered3, hist1_axis3);
-    get_hist_axis(axis_lim[2], axis[2], cloud_tgt_filtered3, hist2_axis3);
-
-    norm_hist(hist1_axis1);
-    norm_hist(hist1_axis2);
-    norm_hist(hist2_axis1);
-    norm_hist(hist2_axis2);
-    norm_hist(hist1_axis3);
-    norm_hist(hist2_axis3);
+    get_hist_axis(axis_lim[2], axis[2], cloud_src_filtered3, moy, hist1_axis3);
+    get_hist_axis(axis_lim[2], axis[2], cloud_tgt_filtered3, moy, hist2_axis3);
 
     ///save histograms--------------------------------------------------------------------------------------------------------------
 //    save_vector (hist1_axis1, "hist1_axis1.csv");
-//    save_vector (hist1_axis2, "hist1_axis2.csv");
-//    save_vector (hist2_axis1,"hist2_axis1.csv");
-//    save_vector (hist2_axis2,"hist2_axis2.csv");
-//    save_vector (hist1_axis3,"hist1_axis3.csv");
-//    save_vector (hist2_axis3,"hist2_axis3.csv");
 
     int translation_axis1;
     int translation_axis2;
@@ -111,11 +109,17 @@ void get_translation(pcl::PointCloud<pcl::PointNormal>::Ptr pointNormals_src, pc
 
     ///compute corr function for axis1--------------------------------------------------------------------------------------------------------------
 
-    get_corr_axis(hist1_axis1, hist2_axis1, corr_axis1, &translation_axis1);
+    int margin; // margin is the number of bins on which to compute correlation (depends on which overlap is expected)
+    if (!sat)  //si on est dans la passe 1 (coarse translation) sat=1 si on est dans la passe 2 sat=0
+        margin = (int)(3*div_fact/2);
+    else
+        margin = 0;
+
+    get_corr_axis(hist1_axis1, hist2_axis1, margin, corr_axis1, &translation_axis1);
 //    save_vector(corr_axis1, "corr_axis1.csv");
 
     float delta1=(float)(axis_lim[0][1]-axis_lim[0][0]) / (float)(N_hist[0]);
-    float delta_axis1 = (translation_axis1-N_hist[0]+1) * delta1;
+    float delta_axis1 = translation_axis1 * delta1;
 
     ///--------------------------------------------
 
@@ -125,7 +129,7 @@ void get_translation(pcl::PointCloud<pcl::PointNormal>::Ptr pointNormals_src, pc
 
     ///compute corr function for axis2--------------------------------------------------------------------------------------------------------------
 
-    get_corr_axis(hist1_axis2, hist2_axis2, corr_axis2, &translation_axis2);
+    get_corr_axis(hist1_axis2, hist2_axis2, margin, corr_axis2, &translation_axis2);
 
 //    save_vector(corr_axis2, "corr_axis2.csv");
 
@@ -134,7 +138,7 @@ void get_translation(pcl::PointCloud<pcl::PointNormal>::Ptr pointNormals_src, pc
     float dot = axis[0][0]*axis[1][0]+axis[0][1]*axis[1][1]+axis[0][2]*axis[1][2];
     double alpha01 = acos(dot);
 
-    double delta_m = (translation_axis2 - N_hist[1] + 1) * delta2;
+    double delta_m = translation_axis2 * delta2;
     double delta_axis2 = ( delta_m - delta_axis1*cos(alpha01) )/sin(alpha01);
 
     ///-------------------------------------------
@@ -145,7 +149,7 @@ void get_translation(pcl::PointCloud<pcl::PointNormal>::Ptr pointNormals_src, pc
 
     ///compute corr function for axis3--------------------------------------------------------------------------------------------------------------
 
-    get_corr_axis(hist1_axis3, hist2_axis3, corr_axis3, &translation_axis3);
+    get_corr_axis(hist1_axis3, hist2_axis3, margin, corr_axis3, &translation_axis3);
 //    save_vector(corr_axis2, "corr_axis2.csv");
 
     float delta3 = (float)(axis_lim[2][1] - axis_lim[2][0]) / (float)(N_hist[2]);
@@ -155,7 +159,7 @@ void get_translation(pcl::PointCloud<pcl::PointNormal>::Ptr pointNormals_src, pc
     dot = local_frame[0][0]*axis[2][0]+local_frame[0][1]*axis[2][1]+local_frame[0][2]*axis[2][2];
     double alpha02 = acos(dot);
 
-    double delta_n = (translation_axis3 - N_hist[2] + 1) * delta3;
+    double delta_n = translation_axis3 * delta3;
     double delta_axis3 = ( (delta_n - delta_axis1*cos(alpha02))/sin(alpha02) - delta_axis2*cos(alpha12) ) / sin(alpha12);
 
     ///-------------------------------------------
@@ -174,11 +178,8 @@ void get_translation(pcl::PointCloud<pcl::PointNormal>::Ptr pointNormals_src, pc
 
     ///compute total transformation matrix--------------------------------------------------------------------------------------------------------------
 
-    Eigen::Matrix4f translation_transform0 = Eigen::Matrix4f::Zero();
-    translation_transform0(0,3)=x1+x2+x3;
-    translation_transform0(1,3)=y1+y2+y3;
-    translation_transform0(2,3)=z1+z2+z3;
-
-    *translation_transform=translation_transform0;
+    (*translation_transform)(0,3)=x1+x2+x3;
+    (*translation_transform)(1,3)=y1+y2+y3;
+    (*translation_transform)(2,3)=z1+z2+z3;
 
 }

@@ -1,4 +1,4 @@
-void get_rotation(std::vector<std::vector<double>> walls1, std::vector<std::vector<double>> walls2, Eigen::Matrix4f* rotation_transform )
+void get_rotation(std::vector<std::vector<float>>& walls1, std::vector<std::vector<float>>& walls2, Eigen::Matrix4f* rotation_transform )
 {
     Eigen::Matrix4f transformation= Eigen::Matrix4f::Identity();
     Eigen::Matrix4f rotation_transform0 = Eigen::Matrix4f::Identity();

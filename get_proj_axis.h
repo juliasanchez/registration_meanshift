@@ -4,9 +4,9 @@
 #include <iostream>
 #include <string>
 
-typedef pcl::PointXYZ pcl_point;
+typedef pcl::PointNormal pcl_point;
 
-void get_proj_axis(std::vector<float> axis_lim, int axis, pcl::PointCloud<pcl_point>::Ptr cloud, std::vector<float>& hist_axis );
+void get_proj_axis(std::vector<float>& axis_lim, int axis, pcl::PointCloud<pcl_point>::Ptr cloud, std::vector<float>& hist_axis );
 #include "get_proj_axis.inl"
 
 #endif // GET_PROJ_AXIS

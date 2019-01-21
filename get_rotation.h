@@ -2,15 +2,12 @@
 #define GET_ROTATION
 
 #include <iostream>
-#include "/usr/local/include/Eigen/Core"
-#include "/usr/local/include/Eigen/Dense"
-#include "/usr/local/include/Eigen/Eigen"
+#include "/usr/local/include/eigen3/Eigen/Core"
+#include "/usr/local/include/eigen3/Eigen/Dense"
 #include <pcl/io/pcd_io.h>
 #include <pcl/common/transforms.h>
 
-typedef pcl::PointXYZ pcl_point;
-
-void get_rotation(pcl::PointCloud<pcl_point> cloud_src);
+void get_rotation(std::vector<std::vector<float>>& walls1, std::vector<std::vector<float>>& walls2, Eigen::Matrix4f* rotation_transform);
 
 #include "get_rotation.inl"
 

@@ -1,4 +1,4 @@
-void get_lim_axis(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_src, pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_tgt, std::vector<float> axis, std::vector<float>& axis_lim  )
+void get_lim_axis(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_src, pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_tgt, std::vector<float>& axis, std::vector<float>& axis_lim  )
 {
     float v_axis_src;
     float v_axis_tgt;

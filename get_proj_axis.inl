@@ -1,4 +1,4 @@
-void get_proj_axis(std::vector<float> axis_lim, int axis, pcl::PointCloud<pcl_point>::Ptr cloud, std::vector<float>& hist_axis )
+void get_proj_axis(std::vector<float>& axis_lim, int axis, pcl::PointCloud<pcl_point>::Ptr cloud, std::vector<float>& hist_axis )
 {
       int N_hist_axis=hist_axis.size();
 

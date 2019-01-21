@@ -17,7 +17,7 @@ void get_walls(pcl::PointCloud<pcl::PointNormal>::Ptr cloud_in, float lim, std::
             cloud_filtered->points.push_back(point);
         }
     }
-    cloud_filtered->width = (uint32_t)  cloud_filtered->points.size();
+    cloud_filtered->width = cloud_filtered->size();
     cloud_filtered->height = 1;
 }
 
