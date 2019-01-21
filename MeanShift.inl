@@ -1,5 +1,3 @@
-//#include "MeanShift.h"
-
 using namespace std;
 
 #define EPSILON 0.0000001
@@ -68,7 +66,7 @@ vector<vector<double> > MeanShift::meanshift(const vector<vector<double> > & poi
     double max_shift_distance;
     do {
         max_shift_distance = 0;
-        #pragma omp parallel for num_threads(14) schedule(dynamic) firstprivate(points, kernel_bandwidth, stop_moving) shared (shifted_points)
+        #pragma omp parallel for num_threads(omp_get_max_threads()) schedule(dynamic) shared(points, kernel_bandwidth, stop_moving, shifted_points)
         for(int i=0; i<shifted_points.size(); i++)
         {
             if (!stop_moving[i]) {

@@ -1,16 +1,19 @@
-void pcn2pc(pcl::PointCloud<pcl::PointNormal>::Ptr cloudin, pcl::PointCloud<pcl_point>::Ptr cloudout)
+void pcn2pc(pcl::PointCloud<pcl::PointNormal>::Ptr cloudin, pcl::PointCloud<pcl::PointXYZ>::Ptr cloudout)
 {
-    cloudout->width    = cloudin->points.size();
+    pcl::PointCloud<pcl::PointNormal>::Ptr cloud_subsampled(new pcl::PointCloud<pcl::PointNormal>);
+    *cloud_subsampled = *cloudin;
+
+    cloudout->width    = cloud_subsampled->points.size();
     cloudout->height   = 1;
     cloudout->is_dense = false;
-    cloudout->points.resize (cloudin->width * cloudin->height);
+    cloudout->points.resize (cloud_subsampled->width * cloud_subsampled->height);
 
 
-    for (int i=0; i<cloudin->points.size(); i++)
+    for (int i=0; i<cloud_subsampled->points.size(); i++)
     {
-        cloudout->points[i].x=cloudin->points[i].normal_x;
-        cloudout->points[i].y=cloudin->points[i].normal_y;
-        cloudout->points[i].z=cloudin->points[i].normal_z;
+        cloudout->points[i].x=cloud_subsampled->points[i].normal_x;
+        cloudout->points[i].y=cloud_subsampled->points[i].normal_y;
+        cloudout->points[i].z=cloud_subsampled->points[i].normal_z;
     }
 
 }

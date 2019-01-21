@@ -3,6 +3,7 @@
 
 #include <iostream>
 #include <string>
+#include "vecMed.h"
 
 void norm_hist(std::vector<float>& hist_axis);
 

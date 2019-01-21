@@ -6,7 +6,7 @@
 #include <string>
 #include <vector>
 
-void save_cluster(std::vector<double>& vec, std::string file_name);
+void save_cluster(std::vector<float>& vec, std::string file_name);
 
 #include "save_cluster.inl"
 
