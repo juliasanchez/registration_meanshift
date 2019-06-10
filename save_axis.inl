@@ -1,4 +1,4 @@
-void save_axis(std::vector<float>& vec, std::string file_name)
+void save_axis(Eigen::Vector3f& vec, std::string file_name)
 {
     	
     std::ofstream file (file_name);

@@ -29,12 +29,9 @@
 #include "icp.h"
 #include "pc2vecvec.h"
 #include "density_filter.h"
-#include "filter_clusters.h"
+#include "MeanShift.h"
 
-
-bool comp_clus(Cluster, Cluster);
 std::string extract_object_from_filename(std::string);
-
 
 typedef pcl::PointNormal pcl_point;
 
@@ -44,7 +41,8 @@ int main(int argc, char *argv[])
     if(argc!=11)
     {
         std::cout<<"classic usage :"<<std::endl;
-        std::cout<<"file1  file2 sample_coeff radius_for_normals density_radius_to_filter_normals number_points_meanshifts bin_width_for_translation uniform_filter_parameter_for_LCP output_folder max_distance_points"<<std::endl<<std::endl;
+        std::cout<<"file1  file2 sample_coeff radius_for_normals angle_uncertainty_on_planes_normals(degrees)  bin_width_for_translation uniform_filter_parameter_for_LCP output_folder max_distance_points"<<std::endl<<std::endl;
+//                                        0.06     0.1                       5                                             0.01                    0.06                            test             200
     }
     ///preprocess clouds--------------------------------------------------------------------------------------------------------------
 
@@ -122,20 +120,21 @@ int main(int argc, char *argv[])
     std::cout<<"cloud source: normal points kept for filtering by density: "<<normals1->points.size()<<std::endl;
     std::cout<<"cloud target: normal points kept for filtering by density : "<<normals2->points.size()<<std::endl<<std::endl;
 
-//    pcl::io::savePCDFileASCII ("normals1_before.csv", *normals1);
-//    pcl::io::savePCDFileASCII ("normals2_before.csv", *normals2);
+    pcl::io::savePCDFileASCII ("normals1_before.csv", *normals1);
+    pcl::io::savePCDFileASCII ("normals2_before.csv", *normals2);
 
-    float radius =atof(argv[5]);
-    int keep =atoi(argv[6]);
+    int keep = atoi(argv[6]);
+    float angle_incertainty = M_PI*atof(argv[5])/180;
+    float density_radius = sqrt(2*(1-cos(angle_incertainty)));
 
-    std::vector<std::vector<float>> modes1; // modes extracted from a simple mean in raw clusters found by density they may be not as good as the ones found by meanshift
-    std::vector<std::vector<float>> modes2;
+    std::vector<Eigen::Vector3f> vec_normals1;  // modes extracted from a simple mean in raw clusters found by density they may be not as good as the ones found by meanshift
+    std::vector<Eigen::Vector3f> vec_normals2;
 
-    density_filter(normals1, radius, keep, modes1);
-    density_filter(normals2, radius, keep, modes2); // radius = neighborhood size to define density // keep = normals number to compute meanshift
+    density_filter(normals1, density_radius, keep, vec_normals1);
+    density_filter(normals2, density_radius, keep, vec_normals2); // angle_incertainty = uncertainty on normal estimation on plane
 
-//    pcl::io::savePCDFileASCII ("normals1_after.csv", *normals1);
-//    pcl::io::savePCDFileASCII ("normals2_after.csv", *normals2);
+    pcl::io::savePCDFileASCII ("normals1_after.csv", *normals1);
+    pcl::io::savePCDFileASCII ("normals2_after.csv", *normals2);
 
     auto t_filter_2 = std::chrono::high_resolution_clock::now();
     std::cout<<"total time to filter normals :" <<std::chrono::duration_cast<std::chrono::milliseconds>(t_filter_2-t_filter_1).count()<<" milliseconds"<<std::endl<<std::endl;
@@ -150,60 +149,30 @@ int main(int argc, char *argv[])
     std::vector< vector<double> > vec_normals_src;
     std::vector< vector<double> > vec_normals_tgt;
 
+    //convert to enter meanshift algo
     pc2vecvec(normals1, vec_normals_src);
     pc2vecvec(normals2, vec_normals_tgt);
 
-    double kernel_bandwidth = 0.1;
+    double kernel_bandwidth = density_radius/2;
     MeanShift *msp = new MeanShift();
-    vector<Cluster> clusters1 = msp->cluster(vec_normals_src, kernel_bandwidth);
-    vector<Cluster> clusters2 = msp->cluster(vec_normals_tgt, kernel_bandwidth);
+    std::vector<Cluster> clusters1 = msp->cluster(vec_normals_src, kernel_bandwidth);
+    std::vector<Cluster> clusters2 = msp->cluster(vec_normals_tgt, kernel_bandwidth);
 
-    std::cout<<"number of clusters found in source : "<<clusters1.size()<<std::endl;
+    std::cout<<std::endl<<"number of clusters found in source : "<<clusters1.size()<<std::endl;
     std::cout<<"number of clusters found in target : "<<clusters2.size()<<std::endl<<std::endl;
 
     auto t_meanshifts2 = std::chrono::high_resolution_clock::now();
     std::chrono::duration_cast<std::chrono::milliseconds>(t_meanshifts2-t_meanshifts1).count();
     std::cout<<"total time to get clusters with meanshift :" << std::chrono::duration_cast<std::chrono::milliseconds>(t_meanshifts2-t_meanshifts1).count()<<" milliseconds"<<std::endl<<std::endl;
 
-    //4_ Filter clusters to remove too spacely large (corresponding to curved sections)...............................................................
-
-    filter_clusters(clusters1);
-    filter_clusters(clusters2);
-
-    //5_ Sort clusters and keep only the 6th most important...........................................................................................
-
-    sort(clusters1.begin(), clusters1.end(),comp_clus);
-    sort(clusters2.begin(), clusters2.end(),comp_clus);
-
-    for(int clus = 0; clus < clusters1.size(); clus++)
-    {
-        float modu=sqrt(clusters1[clus].mode[0]*clusters1[clus].mode[0]+clusters1[clus].mode[1]*clusters1[clus].mode[1]+clusters1[clus].mode[2]*clusters1[clus].mode[2]);
-        for (int m=0; m<3; m++)
-        {
-            clusters1[clus].mode[m]=clusters1[clus].mode[m]/(modu);
-        }
-    }
-
-    for(int clus = 0; clus < clusters2.size(); clus++)
-    {
-        float modu=sqrt(clusters2[clus].mode[0]*clusters2[clus].mode[0]+clusters2[clus].mode[1]*clusters2[clus].mode[1]+clusters2[clus].mode[2]*clusters2[clus].mode[2]);
-        for (int m=0; m<3; m++)
-        {
-            clusters2[clus].mode[m]=clusters2[clus].mode[m]/(modu);
-        }
-    }
-
     //6_ Keep all mode normals in a vector............................................................................................................
 
-    std::vector<std::vector<float>> vec_normals1(clusters1.size(), std::vector<float>(3));
-    std::vector<std::vector<float>> vec_normals2(clusters2.size(), std::vector<float>(3));
-
     for(int clus = 0; clus < clusters1.size(); clus++)
     {
-        vec_normals1[clus][0]=clusters1[clus].mode[0];
-        vec_normals1[clus][1]=clusters1[clus].mode[1];
-        vec_normals1[clus][2]=clusters1[clus].mode[2];
-
+        vec_normals1[clus](0)=clusters1[clus].mode[0];
+        vec_normals1[clus](1)=clusters1[clus].mode[1];
+        vec_normals1[clus](2)=clusters1[clus].mode[2];
+        vec_normals1[clus] /= vec_normals1[clus].norm();
     }
 
     for(int clus = 0; clus < clusters2.size(); clus++)
@@ -211,9 +180,10 @@ int main(int argc, char *argv[])
         vec_normals2[clus][0]=clusters2[clus].mode[0];
         vec_normals2[clus][1]=clusters2[clus].mode[1];
         vec_normals2[clus][2]=clusters2[clus].mode[2];
+        vec_normals2[clus] /= vec_normals2[clus].norm();
     }
 
-    //7_ Save mode normals in files "clusterk_modei.csv".............................................................................................
+    //3_ Save mode normals in files "clusterk_modei.csv".............................................................................................
 
     save_clusters(vec_normals1, "cluster1_mode");
     save_clusters(vec_normals2, "cluster2_mode");
@@ -228,8 +198,8 @@ int main(int argc, char *argv[])
     {
         for (int p=q+1; p<vec_normals1.size(); p++)
         {
-          if( abs(vec_normals1[p][0]*vec_normals1[q][0] + vec_normals1[p][1]*vec_normals1[q][1] + vec_normals1[p][2]*vec_normals1[q][2])<0.9)
-            pairs1.push_back(make_pair(q,p));
+            if( abs(vec_normals1[p].dot(vec_normals1[q]) )<0.9)
+                pairs1.push_back(make_pair(q,p));
         }
     }
 
@@ -238,8 +208,8 @@ int main(int argc, char *argv[])
     {
         for (int p=0; p<vec_normals2.size(); p++)
         {
-          if( abs(vec_normals2[p][0]*vec_normals2[q][0] + vec_normals2[p][1]*vec_normals2[q][1] + vec_normals2[p][2]*vec_normals2[q][2])<0.9 && p!=q)
-            pairs2.push_back(make_pair(q,p));
+            if( abs(vec_normals2[p].dot(vec_normals2[q]) )<0.9)
+                pairs2.push_back(make_pair(q,p));
         }
     }
 
@@ -253,7 +223,7 @@ int main(int argc, char *argv[])
     float lim = 0.99;
     std::vector<int> LCP_vec(pairs1.size()*vec_normals2.size()*vec_normals2.size());
     std::vector<Eigen::Matrix4f, Eigen::aligned_allocator<Eigen::Matrix4f>> total_transform_vec(pairs1.size()*vec_normals2.size()*vec_normals2.size());
-    std::vector< std::vector <std::vector<float> > > total_axis(pairs1.size()*vec_normals2.size()*vec_normals2.size(), std::vector <std::vector<float> >(3, std::vector<float>(3)));
+    std::vector< std::vector <Eigen::Vector3f> > total_axis(pairs1.size()*vec_normals2.size()*vec_normals2.size(), std::vector<Eigen::Vector3f>(3));
     Eigen::Matrix4f good_transform = Eigen::Matrix4f::Identity();
 
     //3_ Sample clouds to speed up transform and LCP calculation........................................................................................
@@ -275,74 +245,60 @@ int main(int argc, char *argv[])
     for (int w=0; w<pairs1.size(); w++)
     {
         pcl::PointCloud<pcl::PointNormal>::Ptr transformed_source(new pcl::PointCloud<pcl::PointNormal>);
+
         int q=pairs1[w].first;
         int p=pairs1[w].second;
+        float al1=acos(vec_normals1[q].dot(vec_normals1[p]));// allows to check if the angle between pairs is the same
 
-        vector<vector<float>> walls1(2);
-        vector<vector<float>> walls2(2);
-
-        walls1[0]=vec_normals1[q];
-        walls1[1]=vec_normals1[p];
-
-        float dot=walls1[0][0]*walls1[1][0]+walls1[0][1]*walls1[1][1]+walls1[0][2]*walls1[1][2]; // allows to check if the angle between pairs is the same
-        float al1=acos(dot);
-
-        for (int m=0; m<pairs2.size(); m++)
-        {      
-            int r=pairs2[m].first;
-            int s=pairs2[m].second;         
-            walls2[0]=vec_normals2[r];
-            walls2[1]=vec_normals2[s];
-            dot=walls2[0][0]*walls2[1][0]+walls2[0][1]*walls2[1][1]+walls2[0][2]*walls2[1][2];
-            float al2=acos(dot);
-
-
-            //4_1_ Get 2 main walls and their normal to perform translation search. These normals represent translation axis...............
-
-            std::vector<std::vector<float>> axis(3, std::vector<float>(3) );
-
-            for(int i=0; i<3; i++)
+        if(al1*180/M_PI > 10 && al1*180/M_PI < 170)
+        {
+            for (int m=0; m<pairs2.size(); m++)
             {
-                axis[0][i]=walls2[0][i];
-                axis[1][i]=walls2[1][i];
-            }
+                int r=pairs2[m].first;
+                int s=pairs2[m].second;
+                float al2=acos(vec_normals2[r].dot(vec_normals2[s]));
 
-            if (abs(al1-al2)<0.05)  //Checking if angles are the same
-            {
-                Eigen::Matrix4f rotation_transform = Eigen::Matrix4f::Identity();
-                get_rotation(walls1, walls2, &rotation_transform);
-                pcl::transformPointCloudWithNormals (*pointNormals_src, *transformed_source, rotation_transform);
+                //4_1_ Get 2 main walls and their normal to perform translation search. These normals represent translation axis...............
 
-                std::vector<std::vector<float>> vec_normals1cpy (vec_normals1.size(), std::vector<float>(3));
+                std::vector<Eigen::Vector3f> axis(3);
+                axis[0]=vec_normals2[r];
+                axis[1]=vec_normals2[s];
 
-                for (int k=0; k<vec_normals1cpy.size(); k++)
+                if (abs(al1-al2)*180/M_PI<3)  //Checking if angles are the same
                 {
-                    vec_normals1cpy[k][0]=vec_normals1[k][0]*rotation_transform(0,0)+vec_normals1[k][1]*rotation_transform(0,1)+vec_normals1[k][2]*rotation_transform(0,2);
-                    vec_normals1cpy[k][1]=vec_normals1[k][0]*rotation_transform(1,0)+vec_normals1[k][1]*rotation_transform(1,1)+vec_normals1[k][2]*rotation_transform(1,2);
-                    vec_normals1cpy[k][2]=vec_normals1[k][0]*rotation_transform(2,0)+vec_normals1[k][1]*rotation_transform(2,1)+vec_normals1[k][2]*rotation_transform(2,2);
+                    Eigen::Matrix4f rot_transfo = Eigen::Matrix4f::Identity();
+                    std::pair<Eigen::Vector3f,Eigen::Vector3f> walls1 = std::pair<Eigen::Vector3f,Eigen::Vector3f>(vec_normals1[q], vec_normals1[p]);
+                    std::pair<Eigen::Vector3f,Eigen::Vector3f> walls2 = std::pair<Eigen::Vector3f,Eigen::Vector3f>(vec_normals2[r], vec_normals2[s]);
+                    get_rotation(walls1, walls2, &rot_transfo);
+                    pcl::transformPointCloudWithNormals (*pointNormals_src, *transformed_source, rot_transfo);
+
+                    std::vector<Eigen::Vector3f> vec_normals1cpy (vec_normals1.size());
+
+                    for (int k=0; k<vec_normals1cpy.size(); k++)
+                        vec_normals1cpy[k]=rot_transfo.block<3,3>(0,0) * vec_normals1[k];
+
+                    get_axis2(vec_normals1cpy, vec_normals2, axis); // Get a third axis to perform translation
+
+                    //4_2_ Get translation with histograms correlation........................................................................
+
+                    Eigen::Matrix4f translation_transform = Eigen::Matrix4f::Zero();
+                    bool sat=true; // we want to saturate the bins to avoid very dense walls to corrupt correlation computation
+    //                save_axis(axis[0], "axisx.txt");
+    //                save_axis(axis[1], "axisy.txt");
+    //                save_axis(axis[2], "axisz.txt");
+                    get_translation(transformed_source, pointNormals_tgt, lim, axis, bin_width, sat, &translation_transform) ;
+
+                    ///compute LCP for this transformation
+
+                    int lim_for = vec_normals2.size();
+                    int idx = w*lim_for*lim_for+r*lim_for+s;
+
+                    total_transform_vec[idx] = rot_transfo+translation_transform;
+                    total_axis[idx]=axis;
+                    get_LCP(cloud_src, tree_tgt, sample+bin_width, &total_transform_vec[idx], &LCP_vec[idx]);
                 }
-                get_axis2(vec_normals1cpy, vec_normals2, axis); // Get a third axis to perform translation
-
-//                save_axis(axis[0], "axisx.txt");
-//                save_axis(axis[1], "axisy.txt");
-//                save_axis(axis[2], "axisz.txt");
-
-                //4_2_ Get translation with histograms correlation........................................................................
-
-                Eigen::Matrix4f translation_transform = Eigen::Matrix4f::Zero();
-                bool sat=true; // we want to saturate the bins to avoid very dense walls to corrupt correlation computation
-                get_translation(transformed_source, pointNormals_tgt, lim, axis, bin_width, sat, &translation_transform) ;
-
-                ///compute LCP for this transformation
-
-                int lim_for=vec_normals2.size();
-                int idx = w*lim_for*lim_for+r*lim_for+s;
-
-                total_transform_vec[idx] = rotation_transform+translation_transform;
-                total_axis[idx]=axis;
-                get_LCP(cloud_src, tree_tgt, sample+bin_width, &total_transform_vec[idx], &LCP_vec[idx]);
-            }
-          }
+              }
+       }
     }
 
     auto t_loop2 = std::chrono::high_resolution_clock::now();
@@ -383,21 +339,19 @@ int main(int argc, char *argv[])
 
         good_transform=total_transform_vec[index];
 
-
         pcl::transformPointCloudWithNormals (*pointNormals_src, *pointNormals_src, good_transform);
         Eigen::Matrix4f translation_transform = Eigen::Matrix4f::Zero();
         bool sat=false;
 
-//        save_axis(total_axis[index][0], "axis1.txt");
-//        save_axis(total_axis[index][1], "axis2.txt");
-//        save_axis(total_axis[index][2], "axis3.txt");
+        save_axis(total_axis[index][0], "axis1.txt");
+        save_axis(total_axis[index][1], "axis2.txt");
+        save_axis(total_axis[index][2], "axis3.txt");
 
         std::cout<<"coarse transform :"<<std::endl<<good_transform<<std::endl<<LCP_vec[index]<<std::endl<<std::endl;
 
         if(abs(LCP_vec[index]-LCP_vec[index2])<0.1*LCP_vec[index])
-        {
             std::cout<<"2nd choice :"<<std::endl<<total_transform_vec[index2]<<std::endl<<LCP_vec[index2]<<std::endl<<std::endl;
-        }
+
         get_translation(pointNormals_src, pointNormals_tgt, lim, total_axis[index], bin_width, sat, &translation_transform) ;
 
         good_transform += translation_transform;
@@ -450,16 +404,6 @@ int main(int argc, char *argv[])
 
 
 //TOOL FUNCTIONS
-
-
-bool comp_clus(Cluster clus1, Cluster clus2 )
-{
-    if ( clus1.original_points.size()>clus2.original_points.size() )
-    {
-        return true;
-    }
-    return false;
-}
 
 std::string extract_object_from_filename(std::string file_name)
 {

@@ -7,7 +7,7 @@
 #include <pcl/io/pcd_io.h>
 #include <pcl/common/transforms.h>
 
-void get_rotation(std::vector<std::vector<float>>& walls1, std::vector<std::vector<float>>& walls2, Eigen::Matrix4f* rotation_transform);
+void get_rotation(std::pair<Eigen::Vector3f, Eigen::Vector3f>& walls1, std::pair<Eigen::Vector3f, Eigen::Vector3f>& walls2, Eigen::Matrix4f* rotation_transform);
 
 #include "get_rotation.inl"
 

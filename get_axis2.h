@@ -3,9 +3,8 @@
 
 #include <iostream>
 #include <vector>
-#include "MeanShift.h"
 
-void get_axis2(std::vector<std::vector<float>> &clusters1, std::vector<std::vector<float>> &clusters2, std::vector< std::vector <float> >& axis);
+void get_axis2(std::vector<Eigen::Vector3f> &clusters1, std::vector<Eigen::Vector3f> &clusters2, std::vector< Eigen::Vector3f >& axis);
 
 #include "get_axis2.inl"
 

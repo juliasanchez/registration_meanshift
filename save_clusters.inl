@@ -1,4 +1,4 @@
-void save_clusters(std::vector<std::vector<float>>& clusters, std::string Name_model)
+void save_clusters(std::vector<Eigen::Vector3f>& clusters, std::string Name_model)
 {
     for(int clus = 0; clus < clusters.size(); clus++)
     {

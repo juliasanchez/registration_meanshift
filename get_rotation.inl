@@ -1,4 +1,4 @@
-void get_rotation(std::vector<std::vector<float>>& walls1, std::vector<std::vector<float>>& walls2, Eigen::Matrix4f* rotation_transform )
+void get_rotation(std::pair<Eigen::Vector3f, Eigen::Vector3f>& walls1, std::pair<Eigen::Vector3f, Eigen::Vector3f>& walls2, Eigen::Matrix4f* rotation_transform )
 {
     Eigen::Matrix4f transformation= Eigen::Matrix4f::Identity();
     Eigen::Matrix4f rotation_transform0 = Eigen::Matrix4f::Identity();
@@ -12,19 +12,22 @@ void get_rotation(std::vector<std::vector<float>>& walls1, std::vector<std::vect
     cloud_clus1->points.resize (cloud_clus1->width * cloud_clus1->height);
     *cloud_clus2=*cloud_clus1;
 
-    for (int i=0; i<2; i++)
-    {
-        cloud_clus1->points[i].x=walls1[i][0];
-        cloud_clus1->points[i].y=walls1[i][1];
-        cloud_clus1->points[i].z=walls1[i][2];
-        cloud_clus2->points[i].x=walls2[i][0];
-        cloud_clus2->points[i].y=walls2[i][1];
-        cloud_clus2->points[i].z=walls2[i][2];
-    }
-
+    cloud_clus1->points[0].x=walls1.first(0);
+    cloud_clus1->points[0].y=walls1.first(1);
+    cloud_clus1->points[0].z=walls1.first(2);
+    cloud_clus1->points[1].x=walls1.second(0);
+    cloud_clus1->points[1].y=walls1.second(1);
+    cloud_clus1->points[1].z=walls1.second(2);
     cloud_clus1->points[2].x=0;
     cloud_clus1->points[2].y=0;
     cloud_clus1->points[2].z=0;
+
+    cloud_clus2->points[0].x=walls2.first(0);
+    cloud_clus2->points[0].y=walls2.first(1);
+    cloud_clus2->points[0].z=walls2.first(2);
+    cloud_clus2->points[1].x=walls2.second(0);
+    cloud_clus2->points[1].y=walls2.second(1);
+    cloud_clus2->points[1].z=walls2.second(2);
     cloud_clus2->points[2].x=0;
     cloud_clus2->points[2].y=0;
     cloud_clus2->points[2].z=0;

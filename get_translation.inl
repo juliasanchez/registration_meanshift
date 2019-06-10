@@ -1,4 +1,4 @@
-void get_translation(pcl::PointCloud<pcl::PointNormal>::Ptr pointNormals_src, pcl::PointCloud<pcl::PointNormal>::Ptr pointNormals_tgt, float lim, std::vector<std::vector<float>> axis, float bin_width, bool sat, Eigen::Matrix4f* translation_transform)
+void get_translation(pcl::PointCloud<pcl::PointNormal>::Ptr pointNormals_src, pcl::PointCloud<pcl::PointNormal>::Ptr pointNormals_tgt, float lim, std::vector<Eigen::Vector3f> axis, float bin_width, bool sat, Eigen::Matrix4f* translation_transform)
 {
     float div_fact=100;
     if(!sat)
@@ -6,27 +6,13 @@ void get_translation(pcl::PointCloud<pcl::PointNormal>::Ptr pointNormals_src, pc
 
     /// compute local frame axis--------------------------------------------------------------------------------------------------------------
 
-    std::vector<std::vector<float>> local_frame (3, std::vector<float>(3));
-    local_frame[0][0]=axis[0][0];
-    local_frame[0][1]=axis[0][1];
-    local_frame[0][2]=axis[0][2];
-
-    local_frame[2][0]=axis[0][1]*axis[1][2]-axis[0][2]*axis[1][1];
-    local_frame[2][1]=axis[0][2]*axis[1][0]-axis[0][0]*axis[1][2];
-    local_frame[2][2]=axis[0][0]*axis[1][1]-axis[0][1]*axis[1][0];
-
-    local_frame[1][0]=local_frame[2][1]*axis[0][2]-local_frame[2][2]*axis[0][1];
-    local_frame[1][1]=local_frame[2][2]*axis[0][0]-local_frame[2][0]*axis[0][2];
-    local_frame[1][2]=local_frame[2][0]*axis[0][1]-local_frame[2][1]*axis[0][0];
+    std::vector<Eigen::Vector3f> local_frame (3);
+    local_frame[0]=axis[0];
+    local_frame[2]=axis[0].cross(axis[1]);
+    local_frame[1]=local_frame[2].cross(axis[0]);
 
     for(int i=0; i<local_frame.size(); i++)
-    {
-        float modu=sqrt(local_frame[i][0]*local_frame[i][0]+local_frame[i][1]*local_frame[i][1]+local_frame[i][2]*local_frame[i][2]);
-        for(int j=0; j<local_frame[i].size(); j++)
-        {
-            local_frame[i][j]= local_frame[i][j]/modu;
-        }
-    }
+        local_frame[i] /= local_frame[i].norm();
 
 //    save_axis(local_frame[0], "axis_local_x.csv");
 //    save_axis(local_frame[1], "axis_local_y.csv");
@@ -123,9 +109,9 @@ void get_translation(pcl::PointCloud<pcl::PointNormal>::Ptr pointNormals_src, pc
 
     ///--------------------------------------------
 
-    float x1 = delta_axis1*local_frame[0][0];
-    float y1 = delta_axis1*local_frame[0][1];
-    float z1 = delta_axis1*local_frame[0][2];
+    float x1 = delta_axis1*local_frame[0](0);
+    float y1 = delta_axis1*local_frame[0](1);
+    float z1 = delta_axis1*local_frame[0](2);
 
     ///compute corr function for axis2--------------------------------------------------------------------------------------------------------------
 
@@ -135,7 +121,7 @@ void get_translation(pcl::PointCloud<pcl::PointNormal>::Ptr pointNormals_src, pc
 
     float delta2 = (float)(axis_lim[1][1] - axis_lim[1][0]) / (float)(N_hist[1]);
 
-    float dot = axis[0][0]*axis[1][0]+axis[0][1]*axis[1][1]+axis[0][2]*axis[1][2];
+    float dot = axis[0].dot(axis[1]);
     double alpha01 = acos(dot);
 
     double delta_m = translation_axis2 * delta2;
@@ -143,9 +129,9 @@ void get_translation(pcl::PointCloud<pcl::PointNormal>::Ptr pointNormals_src, pc
 
     ///-------------------------------------------
 
-    float x2=delta_axis2*local_frame[1][0];
-    float y2=delta_axis2*local_frame[1][1];
-    float z2=delta_axis2*local_frame[1][2];
+    float x2=delta_axis2*local_frame[1](0);
+    float y2=delta_axis2*local_frame[1](1);
+    float z2=delta_axis2*local_frame[1](2);
 
     ///compute corr function for axis3--------------------------------------------------------------------------------------------------------------
 
@@ -154,9 +140,9 @@ void get_translation(pcl::PointCloud<pcl::PointNormal>::Ptr pointNormals_src, pc
 
     float delta3 = (float)(axis_lim[2][1] - axis_lim[2][0]) / (float)(N_hist[2]);
 
-    dot = local_frame[1][0]*axis[2][0]+local_frame[1][1]*axis[2][1]+local_frame[1][2]*axis[2][2];
+    dot = local_frame[1].dot(axis[2]);
     double alpha12 = acos(dot);
-    dot = local_frame[0][0]*axis[2][0]+local_frame[0][1]*axis[2][1]+local_frame[0][2]*axis[2][2];
+    dot = local_frame[0].dot(axis[2]);
     double alpha02 = acos(dot);
 
     double delta_n = translation_axis3 * delta3;
@@ -164,11 +150,11 @@ void get_translation(pcl::PointCloud<pcl::PointNormal>::Ptr pointNormals_src, pc
 
     ///-------------------------------------------
 
-    float x3=delta_axis3*local_frame[2][0];
-    float y3=delta_axis3*local_frame[2][1];
-    float z3=delta_axis3*local_frame[2][2];
+    float x3=delta_axis3*local_frame[2](0);
+    float y3=delta_axis3*local_frame[2](1);
+    float z3=delta_axis3*local_frame[2](2);
 
-    dot = axis[2][0]*local_frame[2][0]+axis[2][1]*local_frame[2][1]+axis[2][2]*local_frame[2][2];
+    dot = axis[2].dot(local_frame[2]);
     if(dot<0)
     {
         x3=-x3;
