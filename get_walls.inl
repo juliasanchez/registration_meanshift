@@ -1,4 +1,4 @@
-void get_walls(pcl::PointCloud<pcl::PointNormal>::Ptr cloud_in, float lim, Eigen::Vector3f axis, pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_filtered)
+void get_walls(pcl::PointCloud<pcl::PointNormal>::Ptr cloud_in, float lim, Eigen::Vector3f& axis, std::set<double>& proj)
 {
     float dot;
 
@@ -7,15 +7,7 @@ void get_walls(pcl::PointCloud<pcl::PointNormal>::Ptr cloud_in, float lim, Eigen
         dot=cloud_in->points[i].normal_x*axis(0)+cloud_in->points[i].normal_y*axis(1)+cloud_in->points[i].normal_z*axis(2);
 
         if( abs(dot)>lim )
-        {
-            pcl::PointXYZ point;
-            point.x=cloud_in->points[i].x;
-            point.y=cloud_in->points[i].y;
-            point.z=cloud_in->points[i].z;
-            cloud_filtered->points.push_back(point);
-        }
+            proj.insert(cloud_in->points[i].x*axis(0) + cloud_in->points[i].y*axis(1)+cloud_in->points[i].z*axis(2));
     }
-    cloud_filtered->width = cloud_filtered->size();
-    cloud_filtered->height = 1;
 }
 

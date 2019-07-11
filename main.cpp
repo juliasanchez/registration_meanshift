@@ -25,7 +25,7 @@
 #include "save_normals.h"
 #include "save_clusters.h"
 #include "pcn2pc.h"
-#include "get_axis2.h"
+#include "get_axis.h"
 #include "icp.h"
 #include "pc2vecvec.h"
 #include "density_filter.h"
@@ -37,7 +37,6 @@ typedef pcl::PointNormal pcl_point;
 
 int main(int argc, char *argv[])
 {
-
     if(argc!=11)
     {
         std::cout<<"classic usage :"<<std::endl;
@@ -50,54 +49,38 @@ int main(int argc, char *argv[])
 
     auto t_tot1 = std::chrono::high_resolution_clock::now();
 
-    pcl::PointCloud<pcl_point>::Ptr cloud_src(new pcl::PointCloud<pcl_point>);
-    pcl::PointCloud<pcl_point>::Ptr cloud_tgt(new pcl::PointCloud<pcl_point>);
+    pcl::PointCloud<pcl::PointNormal>::Ptr pointNormals_src(new pcl::PointCloud<pcl::PointNormal>);
+    pcl::PointCloud<pcl::PointNormal>::Ptr pointNormals_tgt(new pcl::PointCloud<pcl::PointNormal>);
 
     float sample =atof(argv[3]);
     float normal_radius=atof(argv[4]);
     double reso1;
     double reso2;
     float far = atof(argv[10]);
-    cloud<pcl_point> cld_manager_src;
-    cloud<pcl_point> cld_manager_tgt;
+    cloud cld_manager_src;
+    cloud cld_manager_tgt;
 
-    cld_manager_src.setInputCloud(cloud_src);
-    cld_manager_tgt.setInputCloud(cloud_tgt);
+    cld_manager_src.setInputCloud(pointNormals_src);
+    cld_manager_tgt.setInputCloud(pointNormals_tgt);
 
     pre_process(argv[1],sample, normal_radius, far, &cld_manager_src, &reso1);
     pre_process(argv[2],sample, normal_radius, far, &cld_manager_tgt, &reso2);
 
-    pcl::PointCloud<pcl_point>::Ptr cloud_src_cpy(new pcl::PointCloud<pcl_point>);
-    pcl::PointCloud<pcl_point>::Ptr cloud_tgt_cpy(new pcl::PointCloud<pcl_point>);
-    *cloud_src_cpy = *cloud_src;
-    *cloud_tgt_cpy = *cloud_tgt;
-
-    for (int i = 0; i<cloud_src_cpy->size(); ++i)
-    {
-        cloud_src_cpy->points[i].normal_x = abs(cloud_src_cpy->points[i].normal_x);
-        cloud_src_cpy->points[i].normal_y = abs(cloud_src_cpy->points[i].normal_y);
-        cloud_src_cpy->points[i].normal_z = abs(cloud_src_cpy->points[i].normal_z);
-    }
-
-    for (int i = 0; i<cloud_tgt_cpy->size(); ++i)
-    {
-        cloud_tgt_cpy->points[i].normal_x = abs(cloud_tgt_cpy->points[i].normal_x);
-        cloud_tgt_cpy->points[i].normal_y = abs(cloud_tgt_cpy->points[i].normal_y);
-        cloud_tgt_cpy->points[i].normal_z = abs(cloud_tgt_cpy->points[i].normal_z);
-    }
-
-    pcl::io::savePCDFileASCII ("preprocess_src.csv", *cloud_src_cpy);
-    pcl::io::savePCDFileASCII ("preprocess_tgt.csv", *cloud_tgt_cpy);
-
-    pcl::PointCloud<pcl::PointNormal>::Ptr pointNormals_src(new pcl::PointCloud<pcl::PointNormal>);
-    pcl::PointCloud<pcl::PointNormal>::Ptr pointNormals_tgt(new pcl::PointCloud<pcl::PointNormal>);
-
-    *pointNormals_src = *cloud_src;
-    *pointNormals_tgt = *cloud_tgt;
-
     std::vector<int> indices;
     pcl::removeNaNNormalsFromPointCloud(*pointNormals_src, *pointNormals_src, indices);
     pcl::removeNaNNormalsFromPointCloud(*pointNormals_tgt, *pointNormals_tgt, indices);
+
+    std::string object1 = extract_object_from_filename(argv[1]);
+    std::stringstream stm;
+    stm<<object1<<".pcd";
+    pcl::io::savePCDFileASCII (stm.str(), *pointNormals_src);
+    pcl::io::savePCDFileASCII ("source.csv", *pointNormals_src);
+
+    std::string object2 = extract_object_from_filename(argv[2]);
+    stm.str("");
+    stm<<object2<<".pcd";
+    pcl::io::savePCDFileASCII (stm.str(), *pointNormals_tgt);
+    pcl::io::savePCDFileASCII ("target.csv", *pointNormals_tgt);
 
     std::cout<< "source: points number after preprocessing : "<<pointNormals_src->size()<<std::endl;
     std::cout<< "target: points number after preprocessing : "<<pointNormals_tgt->size()<<std::endl<<std::endl;
@@ -123,15 +106,14 @@ int main(int argc, char *argv[])
     pcl::io::savePCDFileASCII ("normals1_before.csv", *normals1);
     pcl::io::savePCDFileASCII ("normals2_before.csv", *normals2);
 
+    system("rm large_**");
+
     int keep = atoi(argv[6]);
-    float angle_incertainty = M_PI*atof(argv[5])/180;
-    float density_radius = sqrt(2*(1-cos(angle_incertainty)));
+    float angle_incertainty = atof(argv[5])*M_PI/180;
+    float large_angle = 15*M_PI/180;
 
-    std::vector<Eigen::Vector3f> vec_normals1;  // modes extracted from a simple mean in raw clusters found by density they may be not as good as the ones found by meanshift
-    std::vector<Eigen::Vector3f> vec_normals2;
-
-    density_filter(normals1, density_radius, keep, vec_normals1);
-    density_filter(normals2, density_radius, keep, vec_normals2); // angle_incertainty = uncertainty on normal estimation on plane
+    density_filter(normals1, angle_incertainty, large_angle, keep);
+    density_filter(normals2, angle_incertainty, large_angle, keep); // angle_incertainty = uncertainty on normal estimation on plane
 
     pcl::io::savePCDFileASCII ("normals1_after.csv", *normals1);
     pcl::io::savePCDFileASCII ("normals2_after.csv", *normals2);
@@ -153,7 +135,8 @@ int main(int argc, char *argv[])
     pc2vecvec(normals1, vec_normals_src);
     pc2vecvec(normals2, vec_normals_tgt);
 
-    double kernel_bandwidth = density_radius/2;
+    double density_radius = sqrt(2*(1-cos(angle_incertainty)));
+    double kernel_bandwidth = 2*density_radius;
     MeanShift *msp = new MeanShift();
     std::vector<Cluster> clusters1 = msp->cluster(vec_normals_src, kernel_bandwidth);
     std::vector<Cluster> clusters2 = msp->cluster(vec_normals_tgt, kernel_bandwidth);
@@ -162,11 +145,12 @@ int main(int argc, char *argv[])
     std::cout<<"number of clusters found in target : "<<clusters2.size()<<std::endl<<std::endl;
 
     auto t_meanshifts2 = std::chrono::high_resolution_clock::now();
-    std::chrono::duration_cast<std::chrono::milliseconds>(t_meanshifts2-t_meanshifts1).count();
     std::cout<<"total time to get clusters with meanshift :" << std::chrono::duration_cast<std::chrono::milliseconds>(t_meanshifts2-t_meanshifts1).count()<<" milliseconds"<<std::endl<<std::endl;
 
     //6_ Keep all mode normals in a vector............................................................................................................
 
+    std::vector<Eigen::Vector3f> vec_normals1(clusters1.size());  // modes extracted from a simple mean in raw clusters found by density they may be not as good as the ones found by meanshift
+    std::vector<Eigen::Vector3f> vec_normals2(clusters2.size());
     for(int clus = 0; clus < clusters1.size(); clus++)
     {
         vec_normals1[clus](0)=clusters1[clus].mode[0];
@@ -185,6 +169,7 @@ int main(int argc, char *argv[])
 
     //3_ Save mode normals in files "clusterk_modei.csv".............................................................................................
 
+    system("rm cluster*");
     save_clusters(vec_normals1, "cluster1_mode");
     save_clusters(vec_normals2, "cluster2_mode");
 
@@ -221,7 +206,7 @@ int main(int argc, char *argv[])
 
     float bin_width=atof(argv[7]); // for translation
     float lim = 0.99;
-    std::vector<int> LCP_vec(pairs1.size()*vec_normals2.size()*vec_normals2.size());
+    std::vector<float> LCP_vec(pairs1.size()*vec_normals2.size()*vec_normals2.size());
     std::vector<Eigen::Matrix4f, Eigen::aligned_allocator<Eigen::Matrix4f>> total_transform_vec(pairs1.size()*vec_normals2.size()*vec_normals2.size());
     std::vector< std::vector <Eigen::Vector3f> > total_axis(pairs1.size()*vec_normals2.size()*vec_normals2.size(), std::vector<Eigen::Vector3f>(3));
     Eigen::Matrix4f good_transform = Eigen::Matrix4f::Identity();
@@ -231,21 +216,18 @@ int main(int argc, char *argv[])
     float LCP_samp = atof(argv[8]);
     cld_manager_src.sample(LCP_samp);
 
-    pcl::KdTreeFLANN<pcl_point>::Ptr tree_tgt (new pcl::KdTreeFLANN<pcl_point>);
-    tree_tgt->setInputCloud(cloud_tgt);
+    pcl::KdTreeFLANN<pcl::PointNormal>::Ptr tree_tgt (new pcl::KdTreeFLANN<pcl::PointNormal>);
+    tree_tgt->setInputCloud(pointNormals_tgt);
 
-    std::cout<<"points number for LCP calculation :"<< cloud_src->points.size()<<"  "<<cloud_tgt->points.size()<<std::endl<<std::endl;
+    std::cout<<"points number for LCP calculation :"<< pointNormals_src->points.size()<<"  "<<pointNormals_tgt->points.size()<<std::endl<<std::endl;
 
     auto t_loop1= std::chrono::high_resolution_clock::now();
 
     //4_ Main loop to compute each transformation........................................................................................
 
-    #pragma omp parallel for schedule(dynamic) num_threads(omp_get_max_threads()) shared( pairs1, bin_width, lim, vec_normals1, vec_normals2, pointNormals_src, pointNormals_tgt, cloud_src, tree_tgt, LCP_vec, total_transform_vec, total_axis )
-
+    #pragma omp parallel for schedule(dynamic) num_threads(omp_get_max_threads()) shared( pairs1, bin_width, lim, vec_normals1, vec_normals2, pointNormals_src, pointNormals_tgt, tree_tgt, LCP_vec, total_transform_vec, total_axis )
     for (int w=0; w<pairs1.size(); w++)
     {
-        pcl::PointCloud<pcl::PointNormal>::Ptr transformed_source(new pcl::PointCloud<pcl::PointNormal>);
-
         int q=pairs1[w].first;
         int p=pairs1[w].second;
         float al1=acos(vec_normals1[q].dot(vec_normals1[p]));// allows to check if the angle between pairs is the same
@@ -264,8 +246,9 @@ int main(int argc, char *argv[])
                 axis[0]=vec_normals2[r];
                 axis[1]=vec_normals2[s];
 
-                if (abs(al1-al2)*180/M_PI<3)  //Checking if angles are the same
+                if (abs(al1-al2)*180/M_PI<3)  //Checking if angles are the same (3° of difference max between normals)
                 {
+                    pcl::PointCloud<pcl::PointNormal>::Ptr transformed_source(new pcl::PointCloud<pcl::PointNormal>);
                     Eigen::Matrix4f rot_transfo = Eigen::Matrix4f::Identity();
                     std::pair<Eigen::Vector3f,Eigen::Vector3f> walls1 = std::pair<Eigen::Vector3f,Eigen::Vector3f>(vec_normals1[q], vec_normals1[p]);
                     std::pair<Eigen::Vector3f,Eigen::Vector3f> walls2 = std::pair<Eigen::Vector3f,Eigen::Vector3f>(vec_normals2[r], vec_normals2[s]);
@@ -277,15 +260,12 @@ int main(int argc, char *argv[])
                     for (int k=0; k<vec_normals1cpy.size(); k++)
                         vec_normals1cpy[k]=rot_transfo.block<3,3>(0,0) * vec_normals1[k];
 
-                    get_axis2(vec_normals1cpy, vec_normals2, axis); // Get a third axis to perform translation
+                    get_axis(vec_normals1cpy, vec_normals2, axis); // Get a third axis to perform translation
 
                     //4_2_ Get translation with histograms correlation........................................................................
 
                     Eigen::Matrix4f translation_transform = Eigen::Matrix4f::Zero();
                     bool sat=true; // we want to saturate the bins to avoid very dense walls to corrupt correlation computation
-    //                save_axis(axis[0], "axisx.txt");
-    //                save_axis(axis[1], "axisy.txt");
-    //                save_axis(axis[2], "axisz.txt");
                     get_translation(transformed_source, pointNormals_tgt, lim, axis, bin_width, sat, &translation_transform) ;
 
                     ///compute LCP for this transformation
@@ -295,7 +275,7 @@ int main(int argc, char *argv[])
 
                     total_transform_vec[idx] = rot_transfo+translation_transform;
                     total_axis[idx]=axis;
-                    get_LCP(cloud_src, tree_tgt, sample+bin_width, &total_transform_vec[idx], &LCP_vec[idx]);
+                    get_LCP(pointNormals_src, tree_tgt, bin_width*sqrt(3), &total_transform_vec[idx], &LCP_vec[idx]);
                 }
               }
        }
@@ -307,27 +287,20 @@ int main(int argc, char *argv[])
     ///get best transform using LCP value
 
     int index=0;
-
-    int temp=0;
+    int index2=0;
+    float temp=0;
     for (int i=0; i<LCP_vec.size(); i++)
     {
         if(temp<LCP_vec[i])
         {
             temp=LCP_vec[i];
+            index2 = index;
             index=i;
         }
     }
 
-    int index2=0;
-    temp=0;
-    for (int i=0; i<LCP_vec.size(); i++)
-    {
-        if(temp<LCP_vec[i] && abs(total_transform_vec[i](0,0)-total_transform_vec[index](0,0))> 0.05)
-        {
-            temp=LCP_vec[i];
-            index2=i;
-        }
-    }
+    std::cout<<"second LCP chosen : "<<LCP_vec[index2]<<std::endl;
+    std::cout<<"LCP chosen : "<<LCP_vec[index]<<std::endl<<std::endl;
 
     if(LCP_vec[index]==0)
     {
@@ -336,31 +309,53 @@ int main(int argc, char *argv[])
     }
     else
     {
-
-        good_transform=total_transform_vec[index];
-
-        pcl::transformPointCloudWithNormals (*pointNormals_src, *pointNormals_src, good_transform);
-        Eigen::Matrix4f translation_transform = Eigen::Matrix4f::Zero();
         bool sat=false;
 
-        save_axis(total_axis[index][0], "axis1.txt");
-        save_axis(total_axis[index][1], "axis2.txt");
-        save_axis(total_axis[index][2], "axis3.txt");
+        pcl::PointCloud<pcl::PointNormal>::Ptr pointNormals_src1(new pcl::PointCloud<pcl::PointNormal>);
+        pcl::PointCloud<pcl::PointNormal>::Ptr pointNormals_src2(new pcl::PointCloud<pcl::PointNormal>);
 
-        std::cout<<"coarse transform :"<<std::endl<<good_transform<<std::endl<<LCP_vec[index]<<std::endl<<std::endl;
+        Eigen::Matrix4f translation_transform1 = Eigen::Matrix4f::Zero();
+        Eigen::Matrix4f translation_transform2 = Eigen::Matrix4f::Zero();
 
-        if(abs(LCP_vec[index]-LCP_vec[index2])<0.1*LCP_vec[index])
-            std::cout<<"2nd choice :"<<std::endl<<total_transform_vec[index2]<<std::endl<<LCP_vec[index2]<<std::endl<<std::endl;
+        pcl::transformPointCloudWithNormals (*pointNormals_src, *pointNormals_src1, total_transform_vec[index]);
+        get_translation(pointNormals_src1, pointNormals_tgt, lim, total_axis[index], bin_width, sat, &translation_transform1) ;
+        total_transform_vec[index] += translation_transform1;
 
-        get_translation(pointNormals_src, pointNormals_tgt, lim, total_axis[index], bin_width, sat, &translation_transform) ;
+        get_LCP(pointNormals_src, tree_tgt, reso1, &total_transform_vec[index], &LCP_vec[index]);
+        std::cout<<"1st best transform :"<<std::endl<<total_transform_vec[index]<<std::endl<<std::endl;
+        std::cout<<"1st LCP after refinement: "<<LCP_vec[index]<<std::endl<<std::endl;
+        good_transform = total_transform_vec[index];
 
-        good_transform += translation_transform;
+        if(LCP_vec[index2]>0)
+        {
+            pcl::transformPointCloudWithNormals (*pointNormals_src, *pointNormals_src2, total_transform_vec[index2]);
+            get_translation(pointNormals_src2, pointNormals_tgt, lim, total_axis[index2], bin_width, sat, &translation_transform2) ;
+            total_transform_vec[index2] += translation_transform2;
+            get_LCP(pointNormals_src, tree_tgt, reso1, &total_transform_vec[index2], &LCP_vec[index2]);
+            std::cout<<"2nd best transform  :"<<std::endl<<total_transform_vec[index2]<<std::endl<<std::endl;
+            std::cout<<"2nd LCP after refinement: "<<LCP_vec[index2]<<std::endl<<std::endl;
+            if(LCP_vec[index2]>LCP_vec[index])
+                good_transform = total_transform_vec[index2];
+        }
     }
 
     auto t_meth = std::chrono::high_resolution_clock::now();
     std::cout<<"time to get transform with our method :" <<std::chrono::duration_cast<std::chrono::milliseconds>(t_meth-t_tot1_no_preproc).count()<<" milliseconds"<<std::endl<<std::endl;
 
     std::cout<<"best transformation :"<<std::endl<<good_transform<<std::endl<<std::endl;
+
+   if(LCP_vec[index2]>LCP_vec[index])
+   {
+        save_axis(total_axis[index][0], "axis1.txt");
+        save_axis(total_axis[index][1], "axis2.txt");
+        save_axis(total_axis[index][2], "axis3.txt");
+   }
+   else
+   {
+       save_axis(total_axis[index2][0], "axis1.txt");
+       save_axis(total_axis[index2][1], "axis2.txt");
+       save_axis(total_axis[index2][2], "axis3.txt");
+   }
 
     ///save best transformation in build/results/transformations and the time
 
@@ -371,12 +366,10 @@ int main(int argc, char *argv[])
     const char* c=command.c_str();
     system(c);
 
-    std::string object1 = extract_object_from_filename(argv[1]);
-    std::string object2 = extract_object_from_filename(argv[2]);
-
     sstm.str("");
-    sstm<<output<<"/"<<object1<<"_"<<object2<<".txt";
+    sstm<<output<<"/"<<object1<<"_"<<object2<<"_ssfr.txt";
     std::string file_name_tot = sstm.str();
+    std::cout<<"transform file is : "<<file_name_tot<<std::endl;
     ofstream file (file_name_tot);
     file<<good_transform;
     file<<"\n";
@@ -410,9 +403,7 @@ std::string extract_object_from_filename(std::string file_name)
     size_t lastindex_point = file_name.find_last_of(".");
     size_t lastindex_slash = file_name.find_last_of("/");
     if (lastindex_slash==std::string::npos)
-    {
-       lastindex_slash = 0;
-    }
+       lastindex_slash = -1;
 
     return file_name.substr(lastindex_slash+1, lastindex_point-(lastindex_slash+1));
 }

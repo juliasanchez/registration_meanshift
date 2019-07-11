@@ -1,8 +1,5 @@
-void get_rotation(std::pair<Eigen::Vector3f, Eigen::Vector3f>& walls1, std::pair<Eigen::Vector3f, Eigen::Vector3f>& walls2, Eigen::Matrix4f* rotation_transform )
+void get_rotation(std::pair<Eigen::Vector3f, Eigen::Vector3f>& walls1, std::pair<Eigen::Vector3f, Eigen::Vector3f>& walls2, Eigen::Matrix4f* rot_transfo )
 {
-    Eigen::Matrix4f transformation= Eigen::Matrix4f::Identity();
-    Eigen::Matrix4f rotation_transform0 = Eigen::Matrix4f::Identity();
-
     pcl::registration::TransformationEstimationSVD<pcl_point, pcl_point> estimator;
     pcl::PointCloud<pcl_point>::Ptr cloud_clus1(new pcl::PointCloud<pcl_point>);
     pcl::PointCloud<pcl_point>::Ptr cloud_clus2(new pcl::PointCloud<pcl_point>);
@@ -33,10 +30,8 @@ void get_rotation(std::pair<Eigen::Vector3f, Eigen::Vector3f>& walls1, std::pair
     cloud_clus2->points[2].z=0;
 
 
-    estimator.estimateRigidTransformation(*cloud_clus1, *cloud_clus2, transformation);
-    rotation_transform0=transformation;
-    rotation_transform0(0,3)=0;
-    rotation_transform0(1,3)=0;
-    rotation_transform0(2,3)=0;
-    *rotation_transform=rotation_transform0;
+    estimator.estimateRigidTransformation(*cloud_clus1, *cloud_clus2, *rot_transfo);
+    (*rot_transfo)(0,3)=0;
+    (*rot_transfo)(1,3)=0;
+    (*rot_transfo)(2,3)=0;
 }

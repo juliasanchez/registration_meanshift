@@ -2,11 +2,9 @@
 #define GET_AXIS
 
 #include <iostream>
-#include "MeanShift.h"
+#include <vector>
 
-typedef pcl::PointXYZ pcl_point;
-
-void get_axis(std::vector<Cluster> &clusters, std::vector< std::vector <float> >& axis, bool* error );
+void get_axis(std::vector<Eigen::Vector3f> &clusters1, std::vector<Eigen::Vector3f> &clusters2, std::vector< Eigen::Vector3f >& axis);
 
 #include "get_axis.inl"
 

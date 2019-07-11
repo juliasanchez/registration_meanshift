@@ -23,28 +23,28 @@
 
 #include "filter_far.h"
 
-template<typename points>
 class cloud
 {
 public:
     cloud();
-    void setInputCloud(typename pcl::PointCloud<points>::Ptr);
+    void setInputCloud(typename pcl::PointCloud<pcl::PointNormal>::Ptr);
     void setTree();
     void getScale(float*);
     void clean(float far);
-    void getInputCloud(typename pcl::PointCloud<points>::Ptr);
+    typename pcl::PointCloud<pcl::PointNormal>::Ptr getInputCloud();
+
     void getNormals(float);
     int getSize() const;
     void load (std::string);
-    double computeCloudResolution () const;
+    double computeCloudResolution ();
     void sample(float samp);
     void rand_sample(float samp);
     void orient() const;
 
 
 private:
-    typename pcl::PointCloud<points>::Ptr cloud_in;
-    typename pcl::search::KdTree<points> tree;
+    typename pcl::PointCloud<pcl::PointNormal>::Ptr cloud_in;
+    typename pcl::search::KdTree<pcl::PointNormal> tree;
 };
 
 #include "cloud.inl"

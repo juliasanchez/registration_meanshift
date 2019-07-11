@@ -3,8 +3,9 @@
 
 #include <iostream>
 #include <string>
+#include <set>
 
-void get_lim_axis(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_src, pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_tgt, std::vector<float>& axis, std::vector<float>& axis_lim  );
+void get_lim_axis(std::set<double> proj_src, std::set<double> proj_tgt, std::vector<float>& axis_lim  );
 
 #include "get_lim_axis.inl"
 

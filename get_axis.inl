@@ -1,36 +1,31 @@
-void get_axis(std::vector<Cluster> &clusters, std::vector< std::vector <float> >& axis, bool* error )
+void get_axis(std::vector<Eigen::Vector3f> &clusters1, std::vector<Eigen::Vector3f> &clusters2, std::vector<Eigen::Vector3f>& axis)
 {
-    *error=false;
+    Eigen::Vector3f axis_perpend = axis[0].cross(axis[1]);
+    axis_perpend /= axis_perpend.norm();
+    float temp=-10000000;
 
-    //third axis is the cluster with more points after axis1 and axis2 which is not parallel to axis1 nor axis2
-    int p=0;
-    int k=0;
-    while (k<clusters.size() && p==0)
+    for (int k2=0; k2<clusters2.size(); k2++)
     {
-        double dot2=axis[1][0]*clusters[k].mode[0]+axis[1][1]*clusters[k].mode[1]+axis[1][2]*clusters[k].mode[2];
-        double dot1=axis[0][0]*clusters[k].mode[0]+axis[0][1]*clusters[k].mode[1]+axis[0][2]*clusters[k].mode[2];
+        double alpha= acos( abs( clusters2[k2].dot(axis_perpend)/(axis_perpend.norm()*clusters2[k2].norm()) ) ) * 180/ M_PI;
 
-        std::vector<float> cross (3);
-        cross[0]=axis[0][1]*axis[1][2]-axis[0][2]*axis[1][1];
-        cross[1]=-axis[0][0]*axis[1][2]+axis[0][2]*axis[1][0];
-        cross[2]=axis[0][0]*axis[1][1]-axis[0][1]*axis[1][0];
-
-        double dot3=clusters[k].mode[0]*cross[0]+clusters[k].mode[1]*cross[1]+clusters[k].mode[2]*cross[2];
-
-        if(abs(dot1)<0.9 && abs(dot2)<0.9 && abs(dot3)>0.1) //condition : axis z not parallel to axis x, not parallel to axis
+        if (alpha<60)
         {
-            for (int i=0; i<3; i++)
+            for (int k1=0; k1<clusters1.size(); k1++)
             {
-                axis[2][i]=clusters[k].mode[i];
+                double dot=abs(clusters1[k1].dot(clusters2[k2]));
+                if(dot>temp)
+                {
+                    temp=dot;
+                    axis[2]=clusters2[k2];
+                }
             }
-            p=1;
         }
-        k++;
     }
 
-    if(p==0)
+    if(temp == -10000000)
     {
-        *error=true;
+        std::cout<<"Can not find third angle"<<std::endl<<std::endl;
+        axis[2] = axis_perpend;
     }
 
 }

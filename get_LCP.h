@@ -13,8 +13,7 @@
 using namespace std;
 typedef pcl::PointNormal pcl_point;
 
-void get_LCP(pcl::PointCloud<pcl_point>::Ptr cloud_src, pcl::KdTreeFLANN<pcl_point>::Ptr tree, float thresh, Eigen::Matrix4f* transform, int* LCP);
-
+void get_LCP(pcl::PointCloud<pcl::PointNormal>::Ptr cloud_src, pcl::KdTreeFLANN<pcl::PointNormal>::Ptr tree, float thresh, Eigen::Matrix4f* transform, float* LCP);
 #include "get_LCP.inl"
 
 #endif // GET_LCP

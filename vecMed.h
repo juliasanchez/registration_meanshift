@@ -1,7 +1,7 @@
 #ifndef VECMED
 #define VECMED
 
-float vecMed(std::vector<float> vec);
+float vecMed(std::vector<float>& vec);
 
 #include "vecMed.inl"
 

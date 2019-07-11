@@ -4,7 +4,7 @@ void get_corr_axis(std::vector<float>& hist1_axisi, std::vector<float>& hist2_ax
     int N_hist_axis= hist1_axisi.size();
 
     if(margin<3 || margin>N_hist_axis-1 )
-        margin=N_hist_axis-1;
+        margin = N_hist_axis-1;
 
     corr_axis.resize(2*margin+1);
 
