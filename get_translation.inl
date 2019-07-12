@@ -6,7 +6,7 @@ void get_translation(pcl::PointCloud<pcl::PointNormal>::Ptr pointNormals_src, pc
 
     bool moy= !sat;
 
-    int margin; // margin is the number of bins on which to compute correlation (depends on which overlap is expected)
+    int margin = 0; // margin is the number of bins on which to compute correlation (depends on which overlap is expected)
     if (!sat)  //si on est dans la passe 1 (coarse translation) sat=1 si on est dans la passe 2 sat=0
         margin = (int)(1.5*div_fact);
     else
@@ -15,13 +15,13 @@ void get_translation(pcl::PointCloud<pcl::PointNormal>::Ptr pointNormals_src, pc
     std::vector<std::vector<float>> axis_lim(3,std::vector<float>(2,0.0));
     std::vector<int> N_hist(3);
 
-    double delta_axis1;
-    double delta_axis2;
-    double delta_axis3;
+    double delta_axis1 = 0;
+    double delta_axis2 = 0;
+    double delta_axis3 = 0;
 
-    int translation_axis1;
-    int translation_axis2;
-    int translation_axis3;
+    int translation_axis1 = 0;
+    int translation_axis2 = 0;
+    int translation_axis3 = 0;
 
     std::vector<float> corr_axis1;
     std::vector<float> corr_axis2;
@@ -55,7 +55,7 @@ void get_translation(pcl::PointCloud<pcl::PointNormal>::Ptr pointNormals_src, pc
     get_walls(pointNormals_tgt, lim, axis[0], proj_tgt);
 
     if(proj_src.size()==0 || proj_tgt.size()==0)
-        std::cout<<"lack of direction"<<std::endl;
+        std::cout<<"lack of direction : no moving on first axis"<<std::endl;
     else
     {
         get_lim_axis(proj_src, proj_tgt, axis_lim[0]);
@@ -72,9 +72,8 @@ void get_translation(pcl::PointCloud<pcl::PointNormal>::Ptr pointNormals_src, pc
         get_corr_axis(hist1_axis1, hist2_axis1, margin, corr_axis1, &translation_axis1);
         float delta1=(float)(axis_lim[0][1]-axis_lim[0][0]) / (float)(N_hist[0]);
         delta_axis1 = translation_axis1 * delta1;
-        trans1 = delta_axis1*local_frame[0];
     }
-
+    trans1 = delta_axis1*local_frame[0];
 
     //filter clouds to keep walls on y--------------------------------------------------------------------------------------------------------------
     proj_src.clear();
@@ -84,7 +83,7 @@ void get_translation(pcl::PointCloud<pcl::PointNormal>::Ptr pointNormals_src, pc
     get_walls(pointNormals_tgt, lim, axis[1], proj_tgt);
 
     if(proj_src.size()==0 || proj_tgt.size()==0)
-        std::cout<<"lack of direction"<<std::endl;
+        std::cout<<"lack of direction : no moving on second axis"<<std::endl;
     else
     {
         get_lim_axis(proj_src, proj_tgt, axis_lim[1]);
@@ -106,8 +105,8 @@ void get_translation(pcl::PointCloud<pcl::PointNormal>::Ptr pointNormals_src, pc
         double alpha01 = acos(dot);
         double delta_m = translation_axis2 * delta2;
         delta_axis2 = ( delta_m - delta_axis1*cos(alpha01) )/sin(alpha01);
-        trans2 = delta_axis2 * local_frame[1];
     }
+    trans2 = delta_axis2 * local_frame[1];
 
     //filter clouds to keep ground and roof on z--------------------------------------------------------------------------------------------------------------
 
@@ -122,7 +121,7 @@ void get_translation(pcl::PointCloud<pcl::PointNormal>::Ptr pointNormals_src, pc
 //    pcl::io::savePCDFileASCII ("before_filt_src.csv", *pointNormals_src);
 
     if(proj_src.size()==0 || proj_tgt.size()==0)
-        std::cout<<"lack of direction"<<std::endl;
+        std::cout<<"lack of direction : no moving on third axis"<<std::endl;
     else
     {
         get_lim_axis(proj_src, proj_tgt, axis_lim[2]);
@@ -146,12 +145,12 @@ void get_translation(pcl::PointCloud<pcl::PointNormal>::Ptr pointNormals_src, pc
         double alpha02 = acos(dot);
         double delta_n = translation_axis3 * delta3;
         delta_axis3 = ( (delta_n - delta_axis1*cos(alpha02))/sin(alpha02) - delta_axis2*cos(alpha12) ) / sin(alpha12);
-        trans3 = delta_axis3*local_frame[2];
-
-        dot = axis[2].dot(local_frame[2]);
-        if(dot<0)
-            trans3 *= -1;
     }
+
+    trans3 = delta_axis3*local_frame[2];
+
+    if(axis[2].dot(local_frame[2])<0)
+        trans3 *= -1;
 
     ///save histograms--------------------------------------------------------------------------------------------------------------
 //    save_vector (hist1_axis1, "hist1_axis1.csv");

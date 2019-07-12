@@ -40,8 +40,8 @@ int main(int argc, char *argv[])
     if(argc!=11)
     {
         std::cout<<"classic usage :"<<std::endl;
-        std::cout<<"file1  file2 sample_coeff radius_for_normals angle_uncertainty_on_planes_normals(degrees)  bin_width_for_translation uniform_filter_parameter_for_LCP output_folder max_distance_points"<<std::endl<<std::endl;
-//                                        0.06     0.1                       5                                             0.01                    0.06                            test             200
+        std::cout<<"file1  file2 sample_coeff radius_for_normals angle_uncertainty_on_planes_normals(degrees) points_to_keep_for_meanshift  bin_width_for_translation uniform_filter_parameter_for_LCP output_folder max_distance_points"<<std::endl<<std::endl;
+//                                        0.06     0.1                       1             	1500                                0.01                    0.06                            test             200
     }
     ///preprocess clouds--------------------------------------------------------------------------------------------------------------
 
